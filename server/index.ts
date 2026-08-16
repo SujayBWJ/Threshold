@@ -3,9 +3,12 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { testRouter } from "./src/routes/test.js";
+import { codeReviewRouter } from "./src/routes/code-review.js";
+import { getBasePaymentRequirement, ALGORAND_TESTNET_NETWORK } from "./src/config/payment.js";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { HTTPFacilitatorClient } from "@x402/core/server";
-import type { Network, ResourceServerExtension } from "@x402/core/types";
+import type { ResourceServerExtension } from "@x402/core/types";
 import { ExactAvmScheme } from "@x402/avm/exact/server";
 import {
   ALGORAND_TESTNET_CAIP2,
@@ -23,14 +26,6 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 // Load env from repo root then server/ (server wins on conflicts).
 config({ path: resolve(__dirname, "../.env") });
 config({ path: resolve(__dirname, ".env"), override: true });
-
-/**
- * GoPlausible currently advertises Algorand networks using the full genesis-hash
- * CAIP-2 form. @x402/avm's ALGORAND_TESTNET_CAIP2 is the truncated canonical form.
- * Route `network` must match facilitator /supported exactly.
- */
-const ALGORAND_TESTNET_NETWORK =
-  `algorand:${ALGORAND_TESTNET_GENESIS_HASH}` as Network;
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -88,6 +83,43 @@ const testDiscovery = declareDiscoveryExtension({
   },
 });
 
+const codeReviewDiscovery = declareDiscoveryExtension({
+  input: {
+    method: "POST",
+  },
+  output: {
+    example: {
+      project: "Threshold",
+      api: "Code Review",
+      method: "POST",
+      endpoint: "/api/code-review",
+      description: "AI-powered code review API",
+      input: {
+        code: "string",
+        language: "string",
+      },
+      output: {
+        success: true,
+        review: {
+          summary: "string",
+          score: "number",
+          issues: [
+            {
+              severity: "low",
+              title: "string",
+              description: "string",
+            }
+          ],
+          suggestions: ["string"],
+        }
+      },
+      price: "$0.001 USDC per request",
+      network: "Algorand TestNet",
+      asset: "USDC ASA 10458941",
+    }
+  },
+});
+
 const app = new Hono();
 
 app.get("/", (c) => {
@@ -102,32 +134,24 @@ app.use(
   paymentMiddleware(
     {
       "GET /api/test": {
-        accepts: [
-          {
-            scheme: "exact",
-            price,
-            network: ALGORAND_TESTNET_NETWORK,
-            payTo: avmAddress,
-            extra: { asset: USDC_TESTNET_ASA_ID },
-          },
-        ],
+        accepts: [getBasePaymentRequirement(price, avmAddress)],
         description: "Threshold x402 payment gate test endpoint",
         mimeType: "application/json",
         extensions: testDiscovery,
+      },
+      "POST /api/code-review": {
+        accepts: [getBasePaymentRequirement(price, avmAddress)],
+        description: "Threshold AI Code Review endpoint",
+        mimeType: "application/json",
+        extensions: codeReviewDiscovery,
       },
     },
     server,
   ),
 );
 
-app.get("/api/test", (c) => {
-  return c.json({
-    project: "Threshold",
-    endpoint: "/api/test",
-    paid: true,
-    message: "Payment verified. Test gate unlocked.",
-  });
-});
+app.route("/api/test", testRouter);
+app.route("/api/code-review", codeReviewRouter);
 
 serve(
   {

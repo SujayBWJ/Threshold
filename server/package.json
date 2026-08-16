@@ -26,6 +26,7 @@
   "type": "module",
   "dependencies": {
     "@algorandfoundation/algokit-utils": "10.0.0-alpha.46",
+    "@google/generative-ai": "^0.24.1",
     "@hono/node-server": "^2.1.0",
     "@x402-avm/extensions": "^2.6.1",
     "@x402/avm": "^2.22.0",
