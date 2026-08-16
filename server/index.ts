@@ -2,10 +2,19 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { testRouter } from "./src/routes/test.js";
 import { codeReviewRouter } from "./src/routes/code-review.js";
-import { getBasePaymentRequirement, ALGORAND_TESTNET_NETWORK } from "./src/config/payment.js";
+import { summarizeRouter } from "./src/routes/summarize.js";
+import { catalogRouter } from "./src/routes/catalog.js";
+import {
+  getBasePaymentRequirement,
+  getPaymentPrice,
+  ALGORAND_TESTNET_NETWORK,
+  PAYMENT_NETWORK_LABEL,
+  DEFAULT_X402_PRICE,
+} from "./src/config/payment.js";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
@@ -37,8 +46,10 @@ function requireEnv(name: string): string {
 }
 
 const avmAddress = requireEnv("AVM_ADDRESS");
+const providerCodeReviewAddress = requireEnv("PROVIDER_CODE_REVIEW_ADDRESS");
+const providerSummarizeAddress = requireEnv("PROVIDER_SUMMARIZE_ADDRESS");
 const facilitatorUrl = requireEnv("FACILITATOR_URL");
-const price = process.env.X402_PRICE?.trim() || "$0.001";
+const price = getPaymentPrice();
 const port = Number(process.env.PORT) || 4021;
 
 if (!isValidAlgorandAddress(avmAddress)) {
@@ -46,6 +57,16 @@ if (!isValidAlgorandAddress(avmAddress)) {
     "Invalid AVM_ADDRESS: must be a valid Algorand public address (payTo receiver).",
   );
   process.exit(1);
+}
+
+for (const [label, address] of [
+  ["PROVIDER_CODE_REVIEW_ADDRESS", providerCodeReviewAddress],
+  ["PROVIDER_SUMMARIZE_ADDRESS", providerSummarizeAddress],
+] as const) {
+  if (!isValidAlgorandAddress(address)) {
+    console.error(`Invalid ${label}: must be a valid Algorand public address.`);
+    process.exit(1);
+  }
 }
 
 if (process.env.X402_NETWORK && process.env.X402_NETWORK !== "testnet") {
@@ -94,6 +115,10 @@ const codeReviewDiscovery = declareDiscoveryExtension({
       method: "POST",
       endpoint: "/api/code-review",
       description: "AI-powered code review API",
+      provider: {
+        name: "DevTools Inc",
+        walletAddress: providerCodeReviewAddress,
+      },
       input: {
         code: "string",
         language: "string",
@@ -113,22 +138,49 @@ const codeReviewDiscovery = declareDiscoveryExtension({
           suggestions: ["string"],
         }
       },
-      price: "$0.001 USDC per request",
-      network: "Algorand TestNet",
+      price: `${DEFAULT_X402_PRICE} USDC per request`,
+      network: PAYMENT_NETWORK_LABEL,
       asset: "USDC ASA 10458941",
+      payTo: providerCodeReviewAddress,
     }
+  },
+});
+
+const summarizeDiscovery = declareDiscoveryExtension({
+  input: {
+    method: "POST",
+  },
+  output: {
+    example: {
+      project: "Threshold",
+      api: "Text Summarizer",
+      method: "POST",
+      endpoint: "/api/summarize",
+      description: "AI-powered text summarization API",
+      provider: {
+        name: "TextFlow AI",
+        walletAddress: providerSummarizeAddress,
+      },
+      input: {
+        text: "string",
+      },
+      output: {
+        success: true,
+        summary: "string",
+      },
+      price: `${DEFAULT_X402_PRICE} USDC per request`,
+      network: PAYMENT_NETWORK_LABEL,
+      asset: "USDC ASA 10458941",
+      payTo: providerSummarizeAddress,
+    },
   },
 });
 
 const app = new Hono();
 
-app.get("/", (c) => {
-  return c.json({
-    project: "Threshold",
-    team: "Interstice",
-    status: "running",
-  });
-});
+app.use("/*", serveStatic({ root: "./public" }));
+
+app.route("/api/catalog", catalogRouter);
 
 app.use(
   paymentMiddleware(
@@ -140,10 +192,16 @@ app.use(
         extensions: testDiscovery,
       },
       "POST /api/code-review": {
-        accepts: [getBasePaymentRequirement(price, avmAddress)],
-        description: "Threshold AI Code Review endpoint",
+        accepts: [getBasePaymentRequirement(price, providerCodeReviewAddress)],
+        description: "Threshold AI Code Review endpoint (DevTools Inc)",
         mimeType: "application/json",
         extensions: codeReviewDiscovery,
+      },
+      "POST /api/summarize": {
+        accepts: [getBasePaymentRequirement(price, providerSummarizeAddress)],
+        description: "Threshold AI Text Summarization endpoint (TextFlow AI)",
+        mimeType: "application/json",
+        extensions: summarizeDiscovery,
       },
     },
     server,
@@ -152,6 +210,7 @@ app.use(
 
 app.route("/api/test", testRouter);
 app.route("/api/code-review", codeReviewRouter);
+app.route("/api/summarize", summarizeRouter);
 
 serve(
   {
@@ -162,7 +221,9 @@ serve(
     console.log(`Threshold server running at http://localhost:${info.port}`);
     console.log(`Network: Algorand TestNet (${ALGORAND_TESTNET_NETWORK})`);
     console.log(`USDC ASA: ${USDC_TESTNET_ASA_ID}`);
-    console.log(`payTo: ${avmAddress}`);
+    console.log(`Platform payTo (test): ${avmAddress}`);
+    console.log(`Code Review provider: ${providerCodeReviewAddress}`);
+    console.log(`Summarize provider: ${providerSummarizeAddress}`);
     console.log(`price: ${price}`);
   },
 );

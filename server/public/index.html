@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>THRESHOLD — Aggregator Infrastructure</title>
+    <meta
+      name="description"
+      content="THRESHOLD API Aggregator and x402 marketplace for programmable micropayments on Algorand TestNet."
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              ember: "#f97316",
+              emberSoft: "#ff8a3d",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-zinc-950 text-zinc-100 antialiased">
+    <div class="min-h-screen">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <header class="h-16 border-b border-zinc-900 bg-zinc-950">
+          <div class="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <a href="/" class="brand-link" aria-label="Threshold home">
+              <img src="/logo.svg" alt="Threshold logo" class="brand-svg" />
+            </a>
+
+            <nav class="flex items-center gap-6 text-xs uppercase tracking-[0.2em] text-zinc-400">
+              <a href="#" class="transition-colors hover:text-zinc-50">Marketplace</a>
+              <a href="#" class="transition-colors hover:text-zinc-50">Docs</a>
+            </nav>
+          </div>
+        </header>
+
+        <main class="pb-16 pt-8">
+          <section class="mb-8 rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-md">
+            <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <div class="max-w-3xl">
+                <div class="mb-3 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-400">
+                  <span class="h-1.5 w-1.5 bg-zinc-500"></span>
+                  API Marketplace Runtime
+                </div>
+                <h1 class="font-sans text-4xl font-semibold tracking-[-0.06em] text-zinc-50 sm:text-5xl">
+                  Programmable Micropayments for AI Agents
+                </h1>
+                <p class="mt-4 max-w-xl text-sm text-zinc-400 sm:text-base">
+                  Discover provider APIs, route requests through the x402 payment layer, and settle usage with USDC in milliseconds across the Algorand TestNet.
+                </p>
+              </div>
+              <div class="flex items-center gap-3 self-start xl:self-auto">
+                <button class="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-400">
+                  Launch Catalog
+                  <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Marketplace</p>
+                <h2 class="mt-2 font-sans text-2xl font-semibold tracking-[-0.05em] text-zinc-50">API Catalog</h2>
+              </div>
+              <span class="text-[10px] font-medium tracking-[0.24em] text-zinc-400 uppercase">
+                Live Discovery
+              </span>
+            </div>
+
+            <div id="catalog-grid" class="bento-grid" aria-live="polite"></div>
+          </section>
+        </main>
+
+        <footer class="border-t border-zinc-800/80 py-8 text-sm text-zinc-500">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="font-mono tracking-[0.2em] text-zinc-600 uppercase">Threshold / API gateway</p>
+            <p>Protected by x402 settlement and facilitator verification.</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+    <script>
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    </script>
+  </body>
+</html>
