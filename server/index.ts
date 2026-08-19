@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import { testRouter } from "./src/routes/test.js";
 import { codeReviewRouter } from "./src/routes/code-review.js";
 import { summarizeRouter } from "./src/routes/summarize.js";
+import { summarizePaidRouter } from "./src/routes/summarize-paid.js";
 import { catalogRouter } from "./src/routes/catalog.js";
 import {
   getBasePaymentRequirement,
@@ -211,6 +212,7 @@ app.use(
 app.route("/api/test", testRouter);
 app.route("/api/code-review", codeReviewRouter);
 app.route("/api/summarize", summarizeRouter);
+app.route("/api/summarize/paid", summarizePaidRouter);
 
 serve(
   {

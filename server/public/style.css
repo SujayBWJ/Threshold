@@ -397,6 +397,57 @@ body {
   line-height: 1.6;
 }
 
+.summarizer-input {
+  margin-top: 1rem;
+}
+
+.summarizer-input label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: rgb(163 163 163);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.summarizer-text {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid rgb(63 63 70);
+  border-radius: 0.25rem;
+  background: rgb(24 24 27);
+  padding: 0.75rem;
+  color: rgb(244 244 245);
+  font: 0.8rem/1.5 "JetBrains Mono", monospace;
+  outline: none;
+}
+
+.summarizer-text:focus {
+  border-color: rgb(245 158 11 / 0.7);
+}
+
+.summary-output {
+  margin-top: 1rem;
+  border-left: 2px solid rgb(245 158 11);
+  background: rgb(24 24 27 / 0.7);
+  padding: 0.75rem 0.9rem;
+  color: rgb(228 228 231);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.transaction-output {
+  margin-top: 0.5rem;
+  overflow-wrap: anywhere;
+  color: rgb(113 113 122);
+  font: 0.68rem/1.4 "JetBrains Mono", monospace;
+}
+
+.hidden {
+  display: none;
+}
+
 @keyframes slide-in {
   from {
     opacity: 0;

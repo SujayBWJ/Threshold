@@ -130,6 +130,18 @@ async function testEndpoint(endpoint, payload, cardElement) {
       if (status) {
         status.textContent = "Paid & Complete";
       }
+
+      const summaryOutput = cardElement.querySelector(".summary-output");
+      if (summaryOutput && typeof data.summary === "string") {
+        summaryOutput.textContent = data.summary;
+        summaryOutput.classList.remove("hidden");
+      }
+
+      const transaction = cardElement.querySelector(".transaction-output");
+      if (transaction && data.payment?.transaction) {
+        transaction.textContent = `Transaction: ${data.payment.transaction}`;
+        transaction.classList.remove("hidden");
+      }
     }
   } catch (error) {
     const output = cardElement.querySelector(".muted-stat");
@@ -158,6 +170,7 @@ function createCard(api, index) {
       maxLength: 180,
     },
   }[api.id] ?? { input: "value" };
+  const isSummarizer = api.id === "summarize";
 
   card.className = `api-card ${index === 0 ? "featured" : "compact"}`;
   card.dataset.wallet = api.provider.walletAddress;
@@ -196,6 +209,14 @@ function createCard(api, index) {
     <div class="schema-panel">
       <pre>${escapeHtml(schema)}</pre>
     </div>
+    ${isSummarizer ? `
+      <div class="summarizer-input">
+        <label for="summarizer-text">Sample text</label>
+        <textarea id="summarizer-text" class="summarizer-text" rows="5" placeholder="Paste text to summarize...">${escapeHtml(samplePayload.text)}</textarea>
+      </div>
+      <div class="summary-output hidden" aria-live="polite"></div>
+      <div class="transaction-output hidden"></div>
+    ` : ""}
     <div class="payment-intercept" aria-live="polite"></div>
     <div class="action-row">
       <button class="primary-action" type="button">
@@ -230,7 +251,12 @@ function createCard(api, index) {
 
   const actionButton = card.querySelector(".primary-action");
   actionButton.addEventListener("click", () => {
-    testEndpoint(api.endpoint, samplePayload, card);
+    const textInput = card.querySelector(".summarizer-text");
+    const payload = isSummarizer && textInput
+      ? { text: textInput.value }
+      : samplePayload;
+    const endpoint = isSummarizer ? "/api/summarize/paid" : api.endpoint;
+    testEndpoint(endpoint, payload, card);
   });
 
   if (window.lucide) {
