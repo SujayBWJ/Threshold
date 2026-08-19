@@ -19,6 +19,7 @@ export interface ApiCatalogEntry {
   currency: string;
   network: string;
   category: string;
+  capabilities: string[];
   provider: ApiProvider;
 }
 
@@ -42,6 +43,7 @@ export function getApiCatalog(): ApiCatalogEntry[] {
       currency: PAYMENT_CURRENCY,
       network: PAYMENT_NETWORK_LABEL,
       category: "developer-tools",
+      capabilities: ["code-review", "bug-detection", "security-analysis"],
       provider: {
         name: "DevTools Inc",
         walletAddress: requireProviderAddress("PROVIDER_CODE_REVIEW_ADDRESS"),
@@ -57,6 +59,7 @@ export function getApiCatalog(): ApiCatalogEntry[] {
       currency: PAYMENT_CURRENCY,
       network: PAYMENT_NETWORK_LABEL,
       category: "text-processing",
+      capabilities: ["text-summarization", "summarization", "text-processing"],
       provider: {
         name: "TextFlow AI",
         walletAddress: requireProviderAddress("PROVIDER_SUMMARIZE_ADDRESS"),

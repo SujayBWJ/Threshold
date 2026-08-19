@@ -66,26 +66,65 @@
                 </p>
               </div>
               <div class="flex items-center gap-3 self-start xl:self-auto">
-                <button class="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-400">
+                <button id="catalog-toggle" class="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-400" type="button" aria-expanded="false" aria-controls="catalog-panel">
                   Launch Catalog
-                  <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                  <i data-lucide="chevron-down" class="h-4 w-4"></i>
                 </button>
               </div>
             </div>
           </section>
 
-          <section>
+          <section class="agent-workspace" aria-labelledby="agent-title">
+            <div class="agent-heading">
+              <div>
+                <p class="section-kicker">Agent Workspace / private by default</p>
+                <h2 id="agent-title">One request. The right capability.</h2>
+                <p class="agent-copy">Describe the outcome you want. Threshold discovers the right capability, settles access, and returns the result without making you manage providers or endpoints.</p>
+              </div>
+              <div class="agent-signal"><span></span> Agent runtime ready</div>
+            </div>
+            <form id="agent-form" class="agent-form">
+              <div class="mode-switch" role="group" aria-label="Agent task type">
+                <button type="button" class="mode-button active" data-mode="summarize">Summarize</button>
+                <button type="button" class="mode-button" data-mode="code-review">Review code</button>
+              </div>
+              <label for="agent-task">What should Threshold do?</label>
+              <input id="agent-task" name="task" value="Get me a concise summary" autocomplete="off" />
+              <div id="summary-fields">
+                <label for="agent-text">Text to process</label>
+                <textarea id="agent-text" name="text" rows="7" placeholder="Paste the text you want Threshold to summarize...">Interstice is an API marketplace for AI agents. It helps agents discover specialized APIs, pay for access with x402, and use the result inside a larger workflow.</textarea>
+              </div>
+              <div id="review-fields" class="hidden">
+                <label for="agent-code">Code to review</label>
+                <textarea id="agent-code" name="code" rows="9" placeholder="Paste code to review..."></textarea>
+                <label for="agent-language">Language</label>
+                <input id="agent-language" name="language" value="javascript" autocomplete="off" />
+              </div>
+              <div class="agent-actions">
+                <button class="agent-submit" type="submit"><span>Run agent</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
+                <span class="agent-price">One controlled TestNet payment per task</span>
+              </div>
+            </form>
+            <div id="agent-status" class="agent-status" aria-live="polite">
+              <span class="agent-status-dot"></span>
+              <span>Waiting for a task</span>
+            </div>
+            <div id="agent-result" class="agent-result hidden" aria-live="polite"></div>
+          </section>
+
+          <section id="catalog-panel" class="catalog-panel hidden" aria-labelledby="catalog-title">
             <div class="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Marketplace</p>
-                <h2 class="mt-2 font-sans text-2xl font-semibold tracking-[-0.05em] text-zinc-50">API Catalog</h2>
+                <h2 id="catalog-title" class="mt-2 font-sans text-2xl font-semibold tracking-[-0.05em] text-zinc-50">Available capabilities</h2>
               </div>
               <span class="text-[10px] font-medium tracking-[0.24em] text-zinc-400 uppercase">
                 Live Discovery
               </span>
             </div>
 
-            <div id="catalog-grid" class="bento-grid" aria-live="polite"></div>
+            <p class="catalog-note">Public capability information only. Threshold handles provider selection, payment, and execution inside the agent flow.</p>
+            <div id="catalog-grid" class="public-catalog-grid" aria-live="polite"></div>
           </section>
         </main>
 

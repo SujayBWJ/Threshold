@@ -1,4 +1,12 @@
 const catalogGrid = document.getElementById("catalog-grid");
+const agentForm = document.getElementById("agent-form");
+const agentStatus = document.getElementById("agent-status");
+const agentResult = document.getElementById("agent-result");
+const summaryFields = document.getElementById("summary-fields");
+const reviewFields = document.getElementById("review-fields");
+const catalogPanel = document.getElementById("catalog-panel");
+const catalogToggle = document.getElementById("catalog-toggle");
+let agentMode = "summarize";
 
 const schemaExamples = {
   "code-review": {
@@ -311,6 +319,83 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function setAgentStatus(message, running = false) {
+  if (!agentStatus) return;
+  agentStatus.classList.toggle("running", running);
+  agentStatus.innerHTML = `<span class="agent-status-dot"></span><span>${escapeHtml(message)}</span>`;
+}
+
+function renderAgentResult(data) {
+  const step = data.steps?.[0];
+  const resultMarkup = data.intent === "code-review"
+    ? renderReviewResult(data.result?.review)
+    : `<p>${escapeHtml(data.result?.summary || "No result returned.")}</p>`;
+  agentResult.innerHTML = `
+    <div class="agent-result-header">
+      <div>
+        <span class="section-kicker">Final response</span>
+        <div class="agent-answer">${resultMarkup}</div>
+      </div>
+      <strong>${escapeHtml(data.totalCost || "")}</strong>
+    </div>
+    <div class="agent-trace">
+      <div class="trace-step"><span class="trace-index">01</span><div><strong>Intent detected</strong><span>${escapeHtml(data.intent || "unknown")}</span></div></div>
+      <div class="trace-step"><span class="trace-index">02</span><div><strong>API selected</strong><span>${escapeHtml(step?.apiName || "Unknown API")} / ${escapeHtml(step?.provider || "Unknown provider")}</span></div></div>
+      <div class="trace-step"><span class="trace-index">03</span><div><strong>Payment settled</strong><span>${escapeHtml(step?.transaction || "Settlement confirmed")}</span></div></div>
+    </div>
+  `;
+  agentResult.classList.remove("hidden");
+}
+
+function renderReviewResult(review) {
+  if (!review || typeof review !== "object") return "<p>No review returned.</p>";
+  return `<div class="review-agent-answer"><strong>Score ${escapeHtml(review.score ?? "n/a")}/10</strong><p>${escapeHtml(review.summary || "No summary returned.")}</p><ul>${(review.issues || []).map((issue) => `<li><b>${escapeHtml(issue.severity || "issue")}:</b> ${escapeHtml(issue.title || "Untitled issue")} <span>${escapeHtml(issue.description || "")}</span></li>`).join("") || "<li>No issues found.</li>"}</ul></div>`;
+}
+
+function setAgentMode(mode) {
+  agentMode = mode;
+  document.querySelectorAll(".mode-button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.mode === mode);
+  });
+  summaryFields.classList.toggle("hidden", mode !== "summarize");
+  reviewFields.classList.toggle("hidden", mode !== "code-review");
+  document.getElementById("agent-task").value = mode === "code-review"
+    ? "Review this code and explain the important issues"
+    : "Get me a concise summary";
+  setAgentStatus(mode === "code-review" ? "Ready to review code" : "Ready to summarize text");
+}
+
+async function runAgent(event) {
+  event.preventDefault();
+  const submit = agentForm.querySelector(".agent-submit");
+  const task = document.getElementById("agent-task").value;
+  const text = document.getElementById("agent-text").value;
+  const code = document.getElementById("agent-code").value;
+  const language = document.getElementById("agent-language").value;
+  submit.disabled = true;
+  submit.classList.add("loading");
+  agentResult.classList.add("hidden");
+  setAgentStatus("Discovering a matching API", true);
+
+  try {
+    setAgentStatus(agentMode === "code-review" ? "Selecting code analysis capability" : "Selecting text summarization capability", true);
+    const response = await fetch("/api/agent/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task, mode: agentMode, text, code, language }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || "Agent request failed");
+    setAgentStatus("Payment settled and result returned");
+    renderAgentResult(data);
+  } catch (error) {
+    setAgentStatus(error instanceof Error ? error.message : "Agent request failed");
+  } finally {
+    submit.disabled = false;
+    submit.classList.remove("loading");
+  }
+}
+
 async function fetchCatalog() {
   try {
     const response = await fetch("/api/catalog");
@@ -322,8 +407,11 @@ async function fetchCatalog() {
     const items = Array.isArray(data.apis) ? data.apis : [];
 
     catalogGrid.innerHTML = "";
-    items.forEach((api, index) => {
-      catalogGrid.appendChild(createCard(api, index));
+    items.forEach((api) => {
+      const card = document.createElement("article");
+      card.className = "public-api-item";
+      card.innerHTML = `<div><span class="public-api-kind">${escapeHtml(api.category)}</span><h3>${escapeHtml(api.name)}</h3><p>${escapeHtml(api.description)}</p></div><span class="public-api-price">${escapeHtml(api.price)} ${escapeHtml(api.currency)} / request</span>`;
+      catalogGrid.appendChild(card);
     });
   } catch (error) {
     catalogGrid.innerHTML = `
@@ -337,3 +425,13 @@ async function fetchCatalog() {
 }
 
 fetchCatalog();
+agentForm?.addEventListener("submit", runAgent);
+document.querySelectorAll(".mode-button").forEach((button) => {
+  button.addEventListener("click", () => setAgentMode(button.dataset.mode));
+});
+catalogToggle?.addEventListener("click", () => {
+  const open = catalogPanel.classList.toggle("hidden");
+  catalogToggle.setAttribute("aria-expanded", String(!open));
+  catalogToggle.querySelector("i").style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
+  if (!open) catalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+});

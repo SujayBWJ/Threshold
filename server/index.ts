@@ -10,6 +10,7 @@ import { codeReviewPaidRouter } from "./src/routes/code-review-paid.js";
 import { summarizeRouter } from "./src/routes/summarize.js";
 import { summarizePaidRouter } from "./src/routes/summarize-paid.js";
 import { catalogRouter } from "./src/routes/catalog.js";
+import { agentRouter } from "./src/routes/agent.js";
 import {
   getBasePaymentRequirement,
   getPaymentPrice,
@@ -183,6 +184,7 @@ const app = new Hono();
 app.use("/*", serveStatic({ root: "./public" }));
 
 app.route("/api/catalog", catalogRouter);
+app.route("/api/agent", agentRouter);
 
 app.use(
   paymentMiddleware(
