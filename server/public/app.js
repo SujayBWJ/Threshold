@@ -7,6 +7,7 @@ const reviewFields = document.getElementById("review-fields");
 const catalogPanel = document.getElementById("catalog-panel");
 const catalogToggle = document.getElementById("catalog-toggle");
 let agentMode = "summarize";
+let catalogScrollPosition = null;
 
 const schemaExamples = {
   "code-review": {
@@ -357,12 +358,21 @@ function setAgentMode(mode) {
   document.querySelectorAll(".mode-button").forEach((button) => {
     button.classList.toggle("active", button.dataset.mode === mode);
   });
-  summaryFields.classList.toggle("hidden", mode !== "summarize");
-  reviewFields.classList.toggle("hidden", mode !== "code-review");
+  const reviewMode = mode === "code-review" || mode === "code-review-and-summarize";
+  summaryFields.classList.toggle("hidden", reviewMode);
+  reviewFields.classList.toggle("hidden", !reviewMode);
   document.getElementById("agent-task").value = mode === "code-review"
     ? "Review this code and explain the important issues"
-    : "Get me a concise summary";
-  setAgentStatus(mode === "code-review" ? "Ready to review code" : "Ready to summarize text");
+    : mode === "code-review-and-summarize"
+      ? "Review this code and give me a concise explanation"
+      : "Get me a concise summary";
+  setAgentStatus(
+    mode === "code-review-and-summarize"
+      ? "Ready to review and summarize"
+      : mode === "code-review"
+        ? "Ready to review code"
+        : "Ready to summarize text",
+  );
 }
 
 async function runAgent(event) {
@@ -378,7 +388,14 @@ async function runAgent(event) {
   setAgentStatus("Discovering a matching API", true);
 
   try {
-    setAgentStatus(agentMode === "code-review" ? "Selecting code analysis capability" : "Selecting text summarization capability", true);
+    setAgentStatus(
+      agentMode === "code-review-and-summarize"
+        ? "Selecting review and summarization capabilities"
+        : agentMode === "code-review"
+          ? "Selecting code analysis capability"
+          : "Selecting text summarization capability",
+      true,
+    );
     const response = await fetch("/api/agent/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -430,8 +447,26 @@ document.querySelectorAll(".mode-button").forEach((button) => {
   button.addEventListener("click", () => setAgentMode(button.dataset.mode));
 });
 catalogToggle?.addEventListener("click", () => {
-  const open = catalogPanel.classList.toggle("hidden");
-  catalogToggle.setAttribute("aria-expanded", String(!open));
-  catalogToggle.querySelector("i").style.transform = open ? "rotate(0deg)" : "rotate(180deg)";
-  if (!open) catalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  const opening = catalogPanel.hidden;
+
+  if (opening) {
+    catalogScrollPosition = window.scrollY;
+    catalogPanel.hidden = false;
+    catalogPanel.classList.remove("hidden");
+    catalogToggle.setAttribute("aria-expanded", "true");
+    catalogToggle.classList.add("is-open");
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      catalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    return;
+  }
+
+  catalogPanel.hidden = true;
+  catalogPanel.classList.add("hidden");
+  catalogToggle.setAttribute("aria-expanded", "false");
+  catalogToggle.classList.remove("is-open");
+  if (catalogScrollPosition !== null) {
+    window.scrollTo({ top: catalogScrollPosition, behavior: "smooth" });
+    catalogScrollPosition = null;
+  }
 });

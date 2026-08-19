@@ -32,7 +32,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/style.css?v=agent-ui-3" />
   </head>
   <body class="bg-zinc-950 text-zinc-100 antialiased">
     <div class="min-h-screen">
@@ -87,6 +87,7 @@
               <div class="mode-switch" role="group" aria-label="Agent task type">
                 <button type="button" class="mode-button active" data-mode="summarize">Summarize</button>
                 <button type="button" class="mode-button" data-mode="code-review">Review code</button>
+                <button type="button" class="mode-button" data-mode="code-review-and-summarize">Review + summarize</button>
               </div>
               <label for="agent-task">What should Threshold do?</label>
               <input id="agent-task" name="task" value="Get me a concise summary" autocomplete="off" />
@@ -112,7 +113,7 @@
             <div id="agent-result" class="agent-result hidden" aria-live="polite"></div>
           </section>
 
-          <section id="catalog-panel" class="catalog-panel hidden" aria-labelledby="catalog-title">
+          <section id="catalog-panel" class="catalog-panel" aria-labelledby="catalog-title" hidden>
             <div class="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Marketplace</p>
@@ -137,7 +138,7 @@
       </div>
     </div>
 
-    <script src="/app.js"></script>
+    <script src="/app.js?v=agent-ui-3"></script>
     <script>
       if (window.lucide) {
         lucide.createIcons();

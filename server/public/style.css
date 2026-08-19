@@ -122,18 +122,23 @@ body {
   pointer-events: none;
 }
 
+#catalog-toggle svg {
+  transition: transform 220ms ease;
+}
+
+#catalog-toggle.is-open svg {
+  transform: rotate(180deg);
+}
+
 .agent-heading {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.5rem;
+  display: block;
   text-align: center;
 }
 
 .agent-heading > div:first-child {
-  width: min(100%, 48rem);
+  width: min(100%, 56rem);
   margin: 0 auto;
 }
 
@@ -147,7 +152,7 @@ body {
 
 .agent-heading h2 {
   max-width: 32rem;
-  margin: 0.75rem 0 0;
+  margin: 0.75rem auto 0;
   font-size: clamp(1.8rem, 4vw, 3.25rem);
   line-height: 0.98;
   letter-spacing: -0.07em;
@@ -155,13 +160,16 @@ body {
 
 .agent-copy {
   max-width: 34rem;
-  margin: 1rem 0 0;
+  margin: 1rem auto 0;
   color: rgb(212 212 216);
   font-size: 0.9rem;
   line-height: 1.55;
 }
 
 .agent-signal {
+  position: absolute;
+  top: 0.15rem;
+  right: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -170,7 +178,6 @@ body {
   font: 10px "JetBrains Mono", monospace;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin: 0 auto;
 }
 
 .agent-signal span,
@@ -192,6 +199,34 @@ body {
   margin-left: auto;
   margin-right: auto;
   text-align: left;
+}
+
+.mode-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-self: center;
+  gap: 0.2rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid rgba(82, 82, 91, 0.8);
+  background: rgba(9, 9, 11, 0.62);
+  padding: 0.2rem;
+}
+
+.mode-button {
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.55rem 0.8rem;
+  color: rgb(161 161 170);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.mode-button:hover,
+.mode-button.active {
+  border-color: rgba(249, 115, 22, 0.55);
+  background: rgba(249, 115, 22, 0.14);
+  color: #fed7aa;
 }
 
 .agent-form label {
@@ -905,7 +940,6 @@ body {
 }
 
 @media (max-width: 640px) {
-  .agent-heading,
   .agent-actions,
   .agent-result-header {
     align-items: flex-start;
@@ -913,7 +947,8 @@ body {
   }
 
   .agent-signal {
-    order: -1;
+    position: static;
+    margin-top: 1rem;
   }
 
   .agent-trace {
@@ -926,5 +961,13 @@ body {
 
   .public-api-item {
     flex-direction: column;
+  }
+
+  .mode-switch {
+    width: 100%;
+  }
+
+  .mode-button {
+    flex: 1 1 auto;
   }
 }

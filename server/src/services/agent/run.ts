@@ -4,7 +4,7 @@ import { summarizeWithPayment } from "../payment/summarize.js";
 
 export type AgentResult = {
   success: true;
-  intent: "summarize" | "code-review";
+  intent: "summarize" | "code-review" | "code-review-and-summarize";
   result: { summary?: string; review?: unknown };
   steps: Array<{
     apiId: string;
@@ -58,13 +58,14 @@ function paymentStep(api: ApiCatalogEntry, transaction: string | null, capabilit
 
 export async function runAgent(input: {
   task: string;
-  mode?: "summarize" | "code-review";
+  mode?: "summarize" | "code-review" | "code-review-and-summarize";
   text?: string;
   code?: string;
   language?: string;
 }): Promise<AgentResult> {
   const catalog = getApiCatalog();
-  const reviewRequested = input.mode === "code-review" || hasReviewIntent(input.task);
+  const composeRequested = input.mode === "code-review-and-summarize";
+  const reviewRequested = composeRequested || input.mode === "code-review" || hasReviewIntent(input.task);
   const summaryRequested = input.mode === "summarize" || hasSummaryIntent(input.task);
 
   if (reviewRequested) {
@@ -76,6 +77,28 @@ export async function runAgent(input: {
     const data = paidResult.data as { review?: unknown };
     if (!data.review) throw new Error("The selected code review API returned no review");
     const transaction = paidResult.settlement?.transaction ?? paidResult.settlement?.txHash ?? null;
+
+    if (composeRequested) {
+      const summaryApi = selectApi(catalog, "text-summarization");
+      const summaryInput = `Code review result:\n${JSON.stringify(data.review)}`;
+      const summaryResult = await summarizeWithPayment(summaryInput);
+      const summaryData = summaryResult.data as { summary?: unknown };
+      if (typeof summaryData.summary !== "string") {
+        throw new Error("The selected summarizer returned no summary");
+      }
+      const summaryTransaction = summaryResult.settlement?.transaction ?? summaryResult.settlement?.txHash ?? null;
+      return {
+        success: true,
+        intent: "code-review-and-summarize",
+        result: { summary: summaryData.summary, review: data.review },
+        steps: [
+          paymentStep(api, transaction, "code-review"),
+          paymentStep(summaryApi, summaryTransaction, "text-summarization"),
+        ],
+        totalCost: "$0.002 USDC",
+      };
+    }
+
     return {
       success: true,
       intent: "code-review",

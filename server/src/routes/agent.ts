@@ -25,14 +25,23 @@ agentRouter.post("/run", async (c) => {
   if (typeof task !== "string" || task.trim() === "") {
     return c.json({ error: "Missing or empty 'task' field" }, 400);
   }
-  if (mode !== undefined && mode !== "summarize" && mode !== "code-review") {
+  if (
+    mode !== undefined &&
+    mode !== "summarize" &&
+    mode !== "code-review" &&
+    mode !== "code-review-and-summarize"
+  ) {
     return c.json({ error: "Invalid 'mode' field" }, 400);
   }
 
   try {
     return c.json(await runAgent({
       task: task.trim(),
-      mode: mode as "summarize" | "code-review" | undefined,
+      mode: mode as
+        | "summarize"
+        | "code-review"
+        | "code-review-and-summarize"
+        | undefined,
       text: typeof text === "string" ? text : undefined,
       code: typeof code === "string" ? code : undefined,
       language: typeof language === "string" ? language : undefined,
