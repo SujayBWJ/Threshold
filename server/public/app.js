@@ -15,29 +15,43 @@ const metricSpend = document.getElementById("metric-spend");
 let agentMode = "summarize";
 let catalogScrollPosition = null;
 let catalogReturnInProgress = false;
+let returnTarget = null;
 const activityStorageKey = "threshold.agent.activity.v1";
+const bootScreen = document.getElementById("boot-screen");
+
+window.addEventListener("load", () => {
+  window.setTimeout(() => bootScreen?.classList.add("is-ready"), 1800);
+});
 
 function returnToWorkspace() {
   if (catalogReturnInProgress) return;
   catalogReturnInProgress = true;
-  catalogToggle.setAttribute("aria-expanded", "false");
-  catalogToggle.classList.remove("is-open");
+  if (returnTarget === "catalog") {
+    catalogToggle.setAttribute("aria-expanded", "false");
+    catalogToggle.classList.remove("is-open");
+  }
 
   const originalPosition = catalogScrollPosition;
   if (originalPosition === null) {
-    catalogPanel.hidden = true;
-    catalogPanel.classList.add("hidden");
+    if (returnTarget === "catalog") {
+      catalogPanel.hidden = true;
+      catalogPanel.classList.add("hidden");
+    }
     catalogBack.hidden = true;
+    returnTarget = null;
     catalogReturnInProgress = false;
     return;
   }
 
   window.scrollTo({ top: originalPosition, behavior: "smooth" });
   window.setTimeout(() => {
-    catalogPanel.hidden = true;
-    catalogPanel.classList.add("hidden");
+    if (returnTarget === "catalog") {
+      catalogPanel.hidden = true;
+      catalogPanel.classList.add("hidden");
+    }
     catalogBack.hidden = true;
     catalogScrollPosition = null;
+    returnTarget = null;
     catalogReturnInProgress = false;
   }, 500);
 }
@@ -524,6 +538,11 @@ siteNav?.addEventListener("click", (event) => {
   const target = document.querySelector(link.getAttribute("href"));
   if (!target) return;
   event.preventDefault();
+  if (target.id === "profile-panel") {
+    catalogScrollPosition = window.scrollY;
+    returnTarget = "profile";
+    catalogBack.hidden = false;
+  }
   target.scrollIntoView({ behavior: "smooth", block: "center" });
   history.replaceState(null, "", link.getAttribute("href"));
 });
@@ -535,6 +554,7 @@ catalogToggle?.addEventListener("click", () => {
 
   if (opening) {
     catalogScrollPosition = window.scrollY;
+    returnTarget = "catalog";
     catalogPanel.hidden = false;
     catalogPanel.classList.remove("hidden");
     catalogToggle.setAttribute("aria-expanded", "true");

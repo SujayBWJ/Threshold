@@ -22,6 +22,91 @@ body {
   min-height: 100vh;
 }
 
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  background: #0a090a;
+  color: #f4f4f5;
+  opacity: 1;
+  transition: opacity 650ms ease, visibility 650ms ease;
+}
+
+.boot-screen.is-ready {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot-mark {
+  position: relative;
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.boot-core {
+  position: absolute;
+  inset: 1.7rem;
+  border-radius: 50%;
+  background: #f97316;
+  box-shadow: 0 0 26px rgba(249, 115, 22, 0.72);
+  animation: boot-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.boot-orbit {
+  position: absolute;
+  inset: 0.35rem;
+  border: 1px solid rgba(249, 115, 22, 0.55);
+  border-radius: 50%;
+  transform: rotate(35deg) scaleY(0.42);
+  animation: boot-spin 2.8s linear infinite;
+}
+
+.boot-orbit-two {
+  inset: 0.8rem -0.05rem;
+  border-color: rgba(251, 191, 36, 0.34);
+  transform: rotate(-35deg) scaleY(0.42);
+  animation-direction: reverse;
+}
+
+.boot-brand {
+  color: #fed7aa;
+  font: 0.72rem "JetBrains Mono", monospace;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+}
+
+.boot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #71717a;
+  font: 0.65rem "JetBrains Mono", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.boot-status span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: #f97316;
+  animation: boot-pulse 700ms ease-in-out infinite alternate;
+}
+
+@keyframes boot-spin {
+  to { transform: rotate(395deg) scaleY(0.42); }
+}
+
+@keyframes boot-pulse {
+  from { opacity: 0.45; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.08); }
+}
+
 .site-nav {
   display: flex;
   align-items: center;
@@ -58,21 +143,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 4rem;
-  max-height: 4rem;
-  width: auto;
+  height: 5rem;
+  width: 5rem;
   overflow: visible;
-  
 }
 
 .brand-svg {
   display: block;
-  height: 4rem;
-  width: auto;
-  max-height: 4rem;
+  width: 4.75rem;
+  height: 4.75rem;
   object-fit: contain;
   object-position: center;
-  filter: brightness(1.2) contrast(1.1);
+  shape-rendering: geometricPrecision;
 }
 
 .bento-grid {
