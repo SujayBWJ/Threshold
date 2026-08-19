@@ -138,6 +138,12 @@ body {
   padding: clamp(1.1rem, 2.5vw, 1.5rem);
 }
 
+#profile-panel {
+  margin-top: 2rem;
+  border-color: rgba(249, 115, 22, 0.28);
+  background: linear-gradient(135deg, rgba(42, 28, 18, 0.46), rgba(24, 24, 27, 0.6));
+}
+
 .console-heading {
   display: flex;
   align-items: flex-start;

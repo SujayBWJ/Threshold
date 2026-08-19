@@ -7,6 +7,7 @@ const reviewFields = document.getElementById("review-fields");
 const catalogPanel = document.getElementById("catalog-panel");
 const catalogToggle = document.getElementById("catalog-toggle");
 const catalogBack = document.getElementById("catalog-back");
+const siteNav = document.querySelector(".site-nav");
 const activityList = document.getElementById("activity-list");
 const metricRuns = document.getElementById("metric-runs");
 const metricPayments = document.getElementById("metric-payments");
@@ -517,6 +518,15 @@ async function fetchCatalog() {
 fetchCatalog();
 renderActivity();
 agentForm?.addEventListener("submit", runAgent);
+siteNav?.addEventListener("click", (event) => {
+  const link = event.target.closest("a[href^='#']");
+  if (!link) return;
+  const target = document.querySelector(link.getAttribute("href"));
+  if (!target) return;
+  event.preventDefault();
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  history.replaceState(null, "", link.getAttribute("href"));
+});
 document.querySelectorAll(".mode-button").forEach((button) => {
   button.addEventListener("click", () => setAgentMode(button.dataset.mode));
 });

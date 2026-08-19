@@ -7,6 +7,13 @@ import {
 
 export const summarizeRouter = new Hono();
 
+function publicAIError(error: AIProviderError): string {
+  if (/429|too many requests|quota exceeded|rate limit/i.test(error.message)) {
+    return "AI provider quota is temporarily exhausted. Please try again later or configure another Gemini API key.";
+  }
+  return error.message;
+}
+
 summarizeRouter.post("/", async (c) => {
   let body: unknown;
   try {
@@ -36,7 +43,7 @@ summarizeRouter.post("/", async (c) => {
       return c.json({ error: "Configuration Error: " + err.message }, 500);
     }
     if (err instanceof AIProviderError) {
-      return c.json({ error: "AI Provider Error: " + err.message }, 502);
+      return c.json({ error: "AI Provider Error: " + publicAIError(err) }, 502);
     }
     return c.json({ error: "Internal Server Error" }, 500);
   }

@@ -45,6 +45,14 @@ function extractJsonObject(text: string): string {
   return text;
 }
 
+function getProviderErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/429|too many requests|quota exceeded|rate limit/i.test(message)) {
+    return "AI provider quota is temporarily exhausted. Please try again later or configure another Gemini API key.";
+  }
+  return "AI provider request failed: " + message;
+}
+
 export interface CodeReviewResponse {
   summary: string;
   score: number;
@@ -110,9 +118,7 @@ ${code}
   } catch (err) {
     if (err instanceof AIProviderError) throw err;
     if (err instanceof AIConfigurationError) throw err;
-    throw new AIProviderError(
-      "AI provider request failed: " + (err as Error).message,
-    );
+    throw new AIProviderError(getProviderErrorMessage(err));
   }
 }
 
@@ -149,8 +155,6 @@ ${text}
   } catch (err) {
     if (err instanceof AIProviderError) throw err;
     if (err instanceof AIConfigurationError) throw err;
-    throw new AIProviderError(
-      "AI provider request failed: " + (err as Error).message,
-    );
+    throw new AIProviderError(getProviderErrorMessage(err));
   }
 }
