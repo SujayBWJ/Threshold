@@ -302,3 +302,12 @@ Stop the process using port `4021`, or set another `PORT` in `.env` and restart 
 ## Current Scope
 
 Threshold is intentionally focused on proving the agent marketplace loop with two capabilities. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and more flexible capability planning.
+
+
+## Screenshots
+<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM" src="https://github.com/user-attachments/assets/b9e9b586-e98b-42e3-8e46-715470b886bc" />
+<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (1)" src="https://github.com/user-attachments/assets/d722c13d-fb3d-44bb-b419-e48dc901c010" />
+<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (2)" src="https://github.com/user-attachments/assets/4ee811ec-10f2-4762-8b75-7d1a474fec17" />
+<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (3)" src="https://github.com/user-attachments/assets/d0450716-1d0a-423c-9924-7bbfdc214215" />
+
+
