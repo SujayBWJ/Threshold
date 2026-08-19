@@ -6,8 +6,40 @@ const summaryFields = document.getElementById("summary-fields");
 const reviewFields = document.getElementById("review-fields");
 const catalogPanel = document.getElementById("catalog-panel");
 const catalogToggle = document.getElementById("catalog-toggle");
+const catalogBack = document.getElementById("catalog-back");
+const activityList = document.getElementById("activity-list");
+const metricRuns = document.getElementById("metric-runs");
+const metricPayments = document.getElementById("metric-payments");
+const metricSpend = document.getElementById("metric-spend");
 let agentMode = "summarize";
 let catalogScrollPosition = null;
+let catalogReturnInProgress = false;
+const activityStorageKey = "threshold.agent.activity.v1";
+
+function returnToWorkspace() {
+  if (catalogReturnInProgress) return;
+  catalogReturnInProgress = true;
+  catalogToggle.setAttribute("aria-expanded", "false");
+  catalogToggle.classList.remove("is-open");
+
+  const originalPosition = catalogScrollPosition;
+  if (originalPosition === null) {
+    catalogPanel.hidden = true;
+    catalogPanel.classList.add("hidden");
+    catalogBack.hidden = true;
+    catalogReturnInProgress = false;
+    return;
+  }
+
+  window.scrollTo({ top: originalPosition, behavior: "smooth" });
+  window.setTimeout(() => {
+    catalogPanel.hidden = true;
+    catalogPanel.classList.add("hidden");
+    catalogBack.hidden = true;
+    catalogScrollPosition = null;
+    catalogReturnInProgress = false;
+  }, 500);
+}
 
 const schemaExamples = {
   "code-review": {
@@ -320,9 +352,49 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function readActivity() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(activityStorageKey) || "[]");
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderActivity() {
+  const activity = readActivity();
+  const payments = activity.reduce((total, item) => total + (item.steps?.length || 0), 0);
+  const spend = activity.reduce((total, item) => total + Number(item.cost || 0), 0);
+  metricRuns.textContent = String(activity.length);
+  metricPayments.textContent = String(payments);
+  metricSpend.textContent = `$${spend.toFixed(3)} USDC`;
+  if (!activity.length) return;
+  activityList.innerHTML = activity.map((item) => `
+    <article class="activity-item">
+      <div class="activity-main"><span class="activity-type">${escapeHtml(item.intent)}</span><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.time)}</small></div>
+      <div class="activity-meta"><strong>${escapeHtml(item.costLabel)}</strong><span>${item.steps?.length || 0} settled ${(item.steps?.length || 0) === 1 ? "request" : "requests"}</span></div>
+    </article>
+  `).join("");
+}
+
+function saveActivity(data) {
+  const activity = readActivity();
+  const item = {
+    intent: data.intent === "code-review-and-summarize" ? "review + summary" : data.intent,
+    label: data.intent === "summarize" ? "Text summary" : data.intent === "code-review" ? "Code review" : "Code review + summary",
+    cost: Number(data.totalCost?.match(/[0-9.]+/)?.[0] || 0),
+    costLabel: data.totalCost || "$0.000 USDC",
+    steps: data.steps || [],
+    time: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+  };
+  localStorage.setItem(activityStorageKey, JSON.stringify([item, ...activity].slice(0, 8)));
+  renderActivity();
+}
+
 function setAgentStatus(message, running = false) {
   if (!agentStatus) return;
   agentStatus.classList.toggle("running", running);
+  agentStatus.classList.toggle("error", !running && /failed|quota|error|try again/i.test(message));
   agentStatus.innerHTML = `<span class="agent-status-dot"></span><span>${escapeHtml(message)}</span>`;
 }
 
@@ -335,7 +407,7 @@ function renderAgentResult(data) {
     <div class="agent-result-header">
       <div>
         <span class="section-kicker">Final response</span>
-        <div class="agent-answer">${resultMarkup}</div>
+        <div class="agent-answer"><span class="answer-label">Threshold result</span>${resultMarkup}</div>
       </div>
       <strong>${escapeHtml(data.totalCost || "")}</strong>
     </div>
@@ -405,6 +477,7 @@ async function runAgent(event) {
     if (!response.ok) throw new Error(data?.error || "Agent request failed");
     setAgentStatus("Payment settled and result returned");
     renderAgentResult(data);
+    saveActivity(data);
   } catch (error) {
     setAgentStatus(error instanceof Error ? error.message : "Agent request failed");
   } finally {
@@ -442,6 +515,7 @@ async function fetchCatalog() {
 }
 
 fetchCatalog();
+renderActivity();
 agentForm?.addEventListener("submit", runAgent);
 document.querySelectorAll(".mode-button").forEach((button) => {
   button.addEventListener("click", () => setAgentMode(button.dataset.mode));
@@ -455,18 +529,14 @@ catalogToggle?.addEventListener("click", () => {
     catalogPanel.classList.remove("hidden");
     catalogToggle.setAttribute("aria-expanded", "true");
     catalogToggle.classList.add("is-open");
+    catalogBack.hidden = false;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       catalogPanel.scrollIntoView({ behavior: "smooth", block: "start" });
     }));
     return;
   }
 
-  catalogPanel.hidden = true;
-  catalogPanel.classList.add("hidden");
-  catalogToggle.setAttribute("aria-expanded", "false");
-  catalogToggle.classList.remove("is-open");
-  if (catalogScrollPosition !== null) {
-    window.scrollTo({ top: catalogScrollPosition, behavior: "smooth" });
-    catalogScrollPosition = null;
-  }
+  returnToWorkspace();
 });
+
+catalogBack?.addEventListener("click", returnToWorkspace);
