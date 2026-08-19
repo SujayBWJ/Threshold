@@ -448,6 +448,97 @@ body {
   display: none;
 }
 
+.review-input {
+  margin-top: 1rem;
+}
+
+.review-input label {
+  display: block;
+  margin: 0.7rem 0 0.5rem;
+  color: rgb(163 163 163);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.review-code,
+.review-language {
+  display: block;
+  width: 100%;
+  border: 1px solid rgb(63 63 70);
+  border-radius: 0.25rem;
+  background: rgb(24 24 27);
+  padding: 0.75rem;
+  color: rgb(244 244 245);
+  outline: none;
+}
+
+.review-code {
+  resize: vertical;
+  font: 0.8rem/1.5 "JetBrains Mono", monospace;
+}
+
+.review-language:focus,
+.review-code:focus {
+  border-color: rgb(245 158 11 / 0.7);
+}
+
+.review-output {
+  margin-top: 1rem;
+  border-left: 2px solid rgb(245 158 11);
+  background: rgb(24 24 27 / 0.7);
+  padding: 0.8rem 0.9rem;
+  color: rgb(228 228 231);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.review-summary {
+  font-size: 0.9rem;
+}
+
+.review-score {
+  margin-top: 0.6rem;
+  color: rgb(251 191 36);
+  font: 0.72rem "JetBrains Mono", monospace;
+  text-transform: uppercase;
+}
+
+.review-issues {
+  margin-top: 0.75rem;
+}
+
+.review-issue {
+  display: grid;
+  gap: 0.2rem;
+  border-top: 1px solid rgb(63 63 70 / 0.7);
+  padding: 0.6rem 0;
+}
+
+.review-issue strong {
+  color: rgb(251 191 36);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.review-issue span {
+  color: rgb(161 161 170);
+}
+
+.review-suggestions {
+  margin-top: 0.75rem;
+  color: rgb(161 161 170);
+}
+
+.review-suggestions strong {
+  color: rgb(228 228 231);
+}
+
+.review-suggestions ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
 @keyframes slide-in {
   from {
     opacity: 0;

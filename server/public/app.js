@@ -142,6 +142,23 @@ async function testEndpoint(endpoint, payload, cardElement) {
         transaction.textContent = `Transaction: ${data.payment.transaction}`;
         transaction.classList.remove("hidden");
       }
+
+      const reviewOutput = cardElement.querySelector(".review-output");
+      if (reviewOutput && data.review) {
+        const review = data.review;
+        reviewOutput.innerHTML = `
+          <div class="review-summary">${escapeHtml(review.summary || "No summary returned.")}</div>
+          <div class="review-score">Score: ${escapeHtml(review.score ?? "n/a")}/10</div>
+          <div class="review-issues">${(review.issues || []).map((issue) => `
+            <div class="review-issue">
+              <strong>${escapeHtml(issue.severity || "issue")} · ${escapeHtml(issue.title || "Untitled issue")}</strong>
+              <span>${escapeHtml(issue.description || "")}</span>
+            </div>
+          `).join("") || "No issues found."}</div>
+          <div class="review-suggestions"><strong>Suggestions</strong><ul>${(review.suggestions || []).map((suggestion) => `<li>${escapeHtml(suggestion)}</li>`).join("") || "<li>No suggestions returned.</li>"}</ul></div>
+        `;
+        reviewOutput.classList.remove("hidden");
+      }
     }
   } catch (error) {
     const output = cardElement.querySelector(".muted-stat");
@@ -171,6 +188,7 @@ function createCard(api, index) {
     },
   }[api.id] ?? { input: "value" };
   const isSummarizer = api.id === "summarize";
+  const isCodeReview = api.id === "code-review";
 
   card.className = `api-card ${index === 0 ? "featured" : "compact"}`;
   card.dataset.wallet = api.provider.walletAddress;
@@ -217,6 +235,16 @@ function createCard(api, index) {
       <div class="summary-output hidden" aria-live="polite"></div>
       <div class="transaction-output hidden"></div>
     ` : ""}
+    ${isCodeReview ? `
+      <div class="review-input">
+        <label for="review-code">Code sample</label>
+        <textarea id="review-code" class="review-code" rows="8" placeholder="Paste code to review...">${escapeHtml(samplePayload.code)}</textarea>
+        <label for="review-language">Language</label>
+        <input id="review-language" class="review-language" value="${escapeHtml(samplePayload.language)}" />
+      </div>
+      <div class="review-output hidden" aria-live="polite"></div>
+      <div class="transaction-output hidden"></div>
+    ` : ""}
     <div class="payment-intercept" aria-live="polite"></div>
     <div class="action-row">
       <button class="primary-action" type="button">
@@ -252,10 +280,18 @@ function createCard(api, index) {
   const actionButton = card.querySelector(".primary-action");
   actionButton.addEventListener("click", () => {
     const textInput = card.querySelector(".summarizer-text");
+    const codeInput = card.querySelector(".review-code");
+    const languageInput = card.querySelector(".review-language");
     const payload = isSummarizer && textInput
       ? { text: textInput.value }
-      : samplePayload;
-    const endpoint = isSummarizer ? "/api/summarize/paid" : api.endpoint;
+      : isCodeReview && codeInput && languageInput
+        ? { code: codeInput.value, language: languageInput.value }
+        : samplePayload;
+    const endpoint = isSummarizer
+      ? "/api/summarize/paid"
+      : isCodeReview
+        ? "/api/code-review/paid"
+        : api.endpoint;
     testEndpoint(endpoint, payload, card);
   });
 
