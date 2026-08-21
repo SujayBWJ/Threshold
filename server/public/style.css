@@ -75,8 +75,15 @@ body {
 
 .headline-title {
   white-space: nowrap;
-  font-size: clamp(2.65rem, 5vw, 4.8rem) !important;
+  font-size: clamp(2.35rem, 3.8vw, 4rem) !important;
   line-height: 0.98;
+}
+
+.headline-content > div:first-child { min-width: 0; }
+
+.headline-content > div:last-child {
+  justify-self: end;
+  margin-left: 1.5rem;
 }
 
 .headline-content .max-w-xl {
@@ -1631,6 +1638,11 @@ body {
   .headline-title {
     white-space: normal;
     font-size: clamp(2.35rem, 11vw, 3.5rem) !important;
+  }
+
+  .headline-content > div:last-child {
+    justify-self: start;
+    margin-left: 0;
   }
 
   .site-nav {
