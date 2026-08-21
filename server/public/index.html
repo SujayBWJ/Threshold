@@ -138,22 +138,22 @@
           <section id="profile-panel" class="console-section profile-section" aria-labelledby="profile-title">
             <div class="console-heading">
               <div>
-                <p class="section-kicker">Observed activity</p>
-                <h2 id="profile-title">What the machines have done.</h2>
+                <p class="section-kicker">Incident ledger</p>
+                <h2 id="profile-title">What Agent A resolved.</h2>
               </div>
               <span class="profile-badge"><span></span> Algorand payment rail</span>
             </div>
             <div class="metric-grid">
-              <div class="metric-card"><span>Observed runs</span><strong id="metric-runs">0</strong></div>
-              <div class="metric-card"><span>x402 settlements</span><strong id="metric-payments">0</strong></div>
-              <div class="metric-card"><span>Algorand USDC spend</span><strong id="metric-spend">$0.000 USDC</strong></div>
+              <div class="metric-card"><span>Incidents resolved without human input</span><strong id="metric-runs">0</strong></div>
+              <div class="metric-card"><span>Cost per autonomous fix</span><strong id="metric-spend">$0.000 USDC</strong></div>
+              <div class="metric-card"><span>Time from failure to patch</span><strong id="metric-duration">--</strong></div>
             </div>
             <div id="activity-list" class="activity-list">
-              <div class="empty-activity">Run an autonomous task to record an observable machine execution trace.</div>
+              <div class="empty-activity">Run the incident flow to create a real resolution record.</div>
             </div>
             <div class="profile-grid">
               <div class="profile-item"><span>Caller</span><strong>Build Runner / Agent A</strong><small>Discovers capabilities when blocked</small></div>
-              <div class="profile-item"><span>Payment rail</span><strong>x402 exact on Algorand</strong><small>MainNet by default / TestNet is opt-in</small></div>
+              <div class="profile-item"><span>Payment rail</span><strong>x402 exact on Algorand</strong><small>Algorand TestNet · USDC ASA 10458941</small></div>
               <div class="profile-item"><span>Observer</span><strong>Human-readable trace</strong><small>Wallet secrets remain outside the browser</small></div>
             </div>
           </section>
@@ -161,15 +161,15 @@
           <section id="catalog-panel" class="catalog-panel" aria-labelledby="catalog-title" hidden>
             <div class="mb-5 flex items-center justify-between gap-3">
               <div>
-                <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Marketplace</p>
-                <h2 id="catalog-title" class="mt-2 font-sans text-2xl font-semibold tracking-[-0.05em] text-zinc-50">Available capabilities</h2>
+                <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Capability catalog</p>
+                <h2 id="catalog-title" class="mt-2 font-sans text-2xl font-semibold tracking-[-0.05em] text-zinc-50">What the agent can discover</h2>
               </div>
               <span class="text-[10px] font-medium tracking-[0.24em] text-zinc-400 uppercase">
                 Live Discovery
               </span>
             </div>
 
-            <p class="catalog-note">Public capability information only. Threshold handles provider selection, payment, and execution inside the agent flow.</p>
+            <p class="catalog-note">The agent queries this catalog and selects a capability based on its task. No human picks the endpoint.</p>
             <div id="catalog-grid" class="public-catalog-grid" aria-live="polite"></div>
           </section>
         </main>
@@ -183,7 +183,7 @@
       </div>
     </div>
 
-    <script src="/app.js?v=agent-ui-14"></script>
+    <script src="/app.js?v=agent-ui-15"></script>
     <script>
       if (window.lucide) {
         lucide.createIcons();

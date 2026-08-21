@@ -10,13 +10,13 @@ const catalogBack = document.getElementById("catalog-back");
 const siteNav = document.querySelector(".site-nav");
 const activityList = document.getElementById("activity-list");
 const metricRuns = document.getElementById("metric-runs");
-const metricPayments = document.getElementById("metric-payments");
 const metricSpend = document.getElementById("metric-spend");
+const metricDuration = document.getElementById("metric-duration");
 let agentMode = "summarize";
 let catalogScrollPosition = null;
 let catalogReturnInProgress = false;
 let returnTarget = null;
-const activityStorageKey = "threshold.agent.activity.v1";
+const activityStorageKey = "threshold.incident.ledger.v1";
 const bootScreen = document.getElementById("boot-screen");
 
 window.addEventListener("load", () => {
@@ -249,6 +249,7 @@ function createCard(api, index) {
   card.className = `api-card ${index === 0 ? "featured" : "compact"}`;
   card.dataset.wallet = api.provider.walletAddress;
   card.dataset.endpoint = api.endpoint;
+  card.dataset.apiId = api.id;
 
   card.innerHTML = `
     <div class="card-header">
@@ -378,32 +379,60 @@ function readActivity() {
 
 function renderActivity() {
   const activity = readActivity();
-  const payments = activity.reduce((total, item) => total + (item.steps?.length || 0), 0);
-  const spend = activity.reduce((total, item) => total + Number(item.cost || 0), 0);
-  metricRuns.textContent = String(activity.length);
-  metricPayments.textContent = String(payments);
-  metricSpend.textContent = `$${spend.toFixed(3)} USDC`;
+  const resolved = activity.filter((item) => item.outcome === "resolved");
+  const spend = resolved.reduce((total, item) => total + Number(item.cost || 0), 0);
+  const durations = resolved.map((item) => Number(item.durationMs || 0)).filter(Boolean);
+  const averageDuration = durations.length ? durations.reduce((sum, value) => sum + value, 0) / durations.length : 0;
+  metricRuns.textContent = String(resolved.length);
+  metricSpend.textContent = `$${(resolved.length ? spend / resolved.length : 0).toFixed(3)} USDC`;
+  metricDuration.textContent = averageDuration ? formatDuration(averageDuration) : "--";
   if (!activity.length) return;
   activityList.innerHTML = activity.map((item) => `
     <article class="activity-item">
-      <div class="activity-main"><span class="activity-type">${escapeHtml(item.intent)}</span><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.time)}</small></div>
-      <div class="activity-meta"><strong>${escapeHtml(item.costLabel)}</strong><span>${item.steps?.length || 0} settled ${(item.steps?.length || 0) === 1 ? "request" : "requests"}</span></div>
+      <div class="activity-main"><span class="activity-type">${escapeHtml(item.outcome === "resolved" ? "RESOLVED" : "FAILED")}</span><strong>${escapeHtml(item.incident)}</strong><small>${escapeHtml(item.time)}</small></div>
+      <div class="activity-meta"><strong>${escapeHtml(item.costLabel)}</strong><span>${escapeHtml(item.outcome === "resolved" ? `fixed in ${formatDuration(item.durationMs)}` : item.reason)}</span></div>
     </article>
   `).join("");
 }
 
-function saveActivity(data) {
-  const activity = readActivity();
+function formatDuration(durationMs) {
+  const seconds = Math.max(0, Number(durationMs || 0)) / 1000;
+  if (!seconds) return "--";
+  return seconds < 10 ? `~${seconds.toFixed(1)}s` : `~${Math.round(seconds)}s`;
+}
+
+function saveIncidentActivity(events) {
+  const first = events[0];
+  const last = events[events.length - 1];
+  const complete = events.find((event) => event.type === "complete");
+  const error = events.find((event) => event.type === "error");
+  const settlement = events.find((event) => event.data?.settlement?.success);
+  const cost = settlement ? 0.001 : 0;
   const item = {
-    intent: data.intent === "code-review-and-summarize" ? "review + summary" : data.intent,
-    label: data.intent === "summarize" ? "Text summary" : data.intent === "code-review" ? "Code review" : "Code review + summary",
-    cost: Number(data.totalCost?.match(/[0-9.]+/)?.[0] || 0),
-    costLabel: data.totalCost || "$0.000 USDC",
-    steps: data.steps || [],
-    time: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+    incident: first?.data?.fixture?.files?.find((file) => file.path === "src/profile-cache.ts") ? "Tenant profile cache collision in src/profile-cache.ts" : "Autonomous incident resolution",
+    outcome: complete ? "resolved" : "failed",
+    reason: complete ? "Structured patch returned" : error?.detail || "Payment flow failed",
+    cost,
+    costLabel: `$${cost.toFixed(3)} USDC`,
+    durationMs: first && last ? new Date(last.timestamp).getTime() - new Date(first.timestamp).getTime() : 0,
+    time: new Date(last?.timestamp || Date.now()).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
   };
+  const activity = readActivity();
   localStorage.setItem(activityStorageKey, JSON.stringify([item, ...activity].slice(0, 8)));
   renderActivity();
+}
+
+function markCatalogSelection(apiId) {
+  document.querySelectorAll(".api-card").forEach((card) => {
+    const selected = card.dataset.apiId === apiId;
+    card.classList.toggle("selected-for-run", selected);
+    const badge = card.querySelector(".selection-badge");
+    if (badge) badge.remove();
+    if (selected) {
+      const header = card.querySelector(".card-header");
+      header?.insertAdjacentHTML("beforeend", '<span class="selection-badge">Selected for this run</span>');
+    }
+  });
 }
 
 function setAgentStatus(message, running = false) {
@@ -479,6 +508,7 @@ async function runPaymentFlow() {
   const transaction = document.getElementById("sim-tx");
   const log = document.getElementById("simulator-log");
   if (!button || !status || !log) return;
+  const flowEvents = [];
 
   button.disabled = true;
   button.classList.add("loading");
@@ -501,13 +531,18 @@ async function runPaymentFlow() {
         const line = message.split("\n").find((entry) => entry.startsWith("data: "));
         if (!line) continue;
         const event = JSON.parse(line.slice(6));
+        flowEvents.push(event);
         addFlowEvent(event);
         updateSettlement(event.data || {});
+        if (event.title === "Capability selected") markCatalogSelection(event.data?.selected?.id);
         status.textContent = event.type === "error" ? "FAILED / SEE TRACE" : event.type === "complete" ? "COMPLETE / PAYMENT SETTLED" : "RUNNING / MACHINE EXCHANGE";
         if (event.type === "complete") renderFlowResult(event.data || {});
       }
     }
+    saveIncidentActivity(flowEvents);
   } catch (error) {
+    flowEvents.push({ type: "error", detail: error instanceof Error ? error.message : "server unavailable", timestamp: new Date().toISOString() });
+    saveIncidentActivity(flowEvents);
     addFlowEvent({ actor: "BROWSER OBSERVER", title: "Stream unavailable", detail: error instanceof Error ? error.message : "server unavailable", timestamp: new Date().toISOString(), type: "error" });
     status.textContent = "FAILED / STREAM CLOSED";
   } finally {
@@ -595,7 +630,6 @@ async function runAgent(event) {
     if (!response.ok) throw new Error(data?.error || "Agent request failed");
     setAgentStatus("Payment settled and result returned");
     renderAgentResult(data);
-    saveActivity(data);
   } catch (error) {
     setAgentStatus(error instanceof Error ? error.message : "Agent request failed");
   } finally {
