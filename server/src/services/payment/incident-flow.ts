@@ -108,9 +108,9 @@ function decodePaymentRequired(header: string | null): Record<string, unknown> |
   }
 }
 
-function explorerUrl(transaction: string, useTestnet: boolean): string {
-  const host = useTestnet ? "testnet.explorer.perawallet.app" : "explorer.perawallet.app";
-  return `https://${host}/tx/${encodeURIComponent(transaction)}`;
+export function explorerUrl(transaction: string, useTestnet: boolean): string {
+  const networkPath = useTestnet ? "testnet" : "mainnet";
+  return `https://lora.algokit.io/${networkPath}/transaction/${encodeURIComponent(transaction)}`;
 }
 
 export async function runIncidentPaymentFlow(options: {
@@ -167,7 +167,7 @@ export async function runIncidentPaymentFlow(options: {
     client.register(network.caip, scheme);
     client.register(network.genesis, scheme);
     client.register("algorand:*" as Network, scheme);
-    emit({ type: "step", actor: "AGENT A / X402 CLIENT", title: "Payment signing started", detail: `ExactAvmScheme registered for ${network.label}`, data: { network: network.genesis } });
+    emit({ type: "step", actor: "AGENT A / X402 CLIENT", title: "Payment signing requested", detail: `ExactAvmScheme registered for ${network.label}; x402 payment signing begins on the paid retry`, data: { network: network.genesis } });
 
     const response = await wrapFetchWithPayment(fetch, client)(endpoint, request);
     const settlement = settlementFrom(response, client);

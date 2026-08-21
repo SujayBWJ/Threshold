@@ -440,8 +440,8 @@ function updateSettlement(data) {
   if (payer) document.getElementById("sim-payer").textContent = formatWallet(payer);
   if (transaction) {
     const transactionNode = document.getElementById("sim-tx");
-    const explorerHost = network?.includes("SGO1GKSzy") ? "testnet.explorer.perawallet.app" : "explorer.perawallet.app";
-    transactionNode.innerHTML = `<a href="https://${explorerHost}/tx/${encodeURIComponent(transaction)}" target="_blank" rel="noreferrer">${escapeHtml(formatWallet(transaction))}</a>`;
+    const networkPath = network?.includes("SGO1GKSzy") ? "testnet" : "mainnet";
+    transactionNode.innerHTML = `<a href="https://lora.algokit.io/${networkPath}/transaction/${encodeURIComponent(transaction)}" target="_blank" rel="noreferrer">${escapeHtml(formatWallet(transaction))}</a>`;
   }
   if (networkLabel) document.getElementById("sim-network").textContent = networkLabel;
   if (data.provider) document.getElementById("sim-provider").textContent = formatWallet(data.provider);

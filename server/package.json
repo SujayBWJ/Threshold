@@ -17,7 +17,7 @@
     "test:pay:code-review": "tsx scripts/pay-code-review.ts",
     "test:pay:summarize": "tsx scripts/pay-summarize.ts",
     "test:pay:resolve-incident": "tsx scripts/pay-resolve-incident.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx --test test/payment-flow.test.ts"
   },
   "keywords": [],
   "author": "",
