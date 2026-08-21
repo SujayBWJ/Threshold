@@ -279,30 +279,26 @@ body {
   position: relative;
   margin-bottom: 3rem;
   overflow: hidden;
-  border: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0;
-  background: linear-gradient(135deg, rgba(8, 43, 40, 0.5), rgba(13, 29, 29, 0.34) 48%, rgba(10, 18, 18, 0.62));
-  padding: clamp(1.75rem, 4vw, 3.25rem) max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
-  box-shadow: 0 24px 70px rgba(9, 9, 11, 0.35);
+  border-radius: 1rem;
+  border: 1px solid rgba(53, 208, 186, 0.34);
+  background: linear-gradient(135deg, rgba(8, 43, 40, 0.78), rgba(13, 29, 29, 0.86) 48%, rgba(10, 18, 18, 0.96));
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: 0 24px 70px rgba(9, 9, 11, 0.55);
 }
 
 .console-section {
   scroll-margin-top: 1.5rem;
   margin: 0 auto 1.5rem;
-  border: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0;
-  background: linear-gradient(180deg, rgba(24, 24, 27, 0.5), rgba(24, 24, 27, 0.25));
-  padding: clamp(1.5rem, 3vw, 2.25rem) max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(24, 24, 27, 0.56);
+  padding: clamp(1.1rem, 2.5vw, 1.5rem);
 }
 
 #profile-panel {
   margin-top: 2rem;
-  border-color: rgba(245, 166, 35, 0.28);
-  background: linear-gradient(135deg, rgba(42, 28, 18, 0.34), rgba(24, 24, 27, 0.42));
+  border-color: rgba(249, 115, 22, 0.28);
+  background: linear-gradient(135deg, rgba(42, 28, 18, 0.46), rgba(24, 24, 27, 0.6));
 }
 
 .console-heading {
@@ -315,8 +311,7 @@ body {
 .console-heading h2 {
   margin-top: 0.5rem;
   color: #f4f4f5;
-  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
-  line-height: 1.1;
+  font-size: 1.35rem;
   letter-spacing: -0.05em;
 }
 
@@ -332,23 +327,26 @@ body {
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.5rem;
+  gap: 0.75rem;
+  margin-top: 1.15rem;
 }
 
 .metric-card,
 .profile-item {
   display: grid;
   gap: 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.45rem;
-  background: rgba(255, 255, 255, 0.035);
-  padding: 1.1rem;
+  border: 1px solid rgba(82, 82, 91, 0.68);
+  border-radius: 0.7rem;
+  background: rgba(9, 9, 11, 0.48);
+  padding: 0.9rem;
 }
 
 .metric-card {
-  min-height: 7rem;
-  align-content: space-between;
+  border: 0;
+  border-top: 1px solid rgba(82, 82, 91, 0.68);
+  border-radius: 0;
+  background: transparent;
+  padding: 0.8rem 0;
 }
 
 .metric-card span,
@@ -360,12 +358,9 @@ body {
 }
 
 .metric-card strong {
-  color: var(--accent);
-  font: 700 clamp(1.65rem, 3vw, 2.35rem) var(--font-display);
-  letter-spacing: -0.04em;
+  color: #fbbf24;
+  font-size: 1.35rem;
 }
-
-.outcome-metrics .metric-card span { max-width: 15rem; line-height: 1.35; }
 
 .profile-item strong {
   color: #f4f4f5;
@@ -486,7 +481,6 @@ body {
   position: fixed;
   left: 50%;
   bottom: 1.25rem;
-  margin-top: 1rem;
   z-index: 20;
   display: inline-flex;
   align-items: center;
@@ -538,7 +532,7 @@ body {
   grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.55fr) minmax(0, 1fr);
   align-items: center;
   gap: 0.8rem;
-  margin: 1.5rem auto 1.25rem;
+  margin: 2rem auto 1.25rem;
   max-width: 64rem;
 }
 
@@ -640,29 +634,12 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin: 1.5rem auto 0;
+  margin: 1.25rem auto 0;
   max-width: 64rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.55rem;
-  background: rgba(8, 12, 12, 0.58);
-  padding: 1rem 1.15rem;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(125, 211, 252, 0.18);
+  border-bottom: 1px solid rgba(125, 211, 252, 0.18);
+  padding: 1rem 0;
 }
-
-.command-toolbar .flow-options {
-  grid-template-columns: repeat(2, auto);
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.45rem 0.7rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.command-toolbar .network-switch {
-  color: #d4d4d8;
-  transition: color 180ms ease;
-}
-
-.command-toolbar .network-switch:hover { color: var(--accent); }
 
 .simulator-toolbar > div { display: grid; gap: 0.35rem; }
 .simulator-toolbar strong { color: #effffb; font-size: 0.85rem; }
@@ -675,13 +652,7 @@ body {
   grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 0.7fr);
   gap: 0.8rem;
   max-width: 64rem;
-  margin: 1rem auto 0;
-}
-
-.catalog-band {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.018);
+  margin: 0.8rem auto 0;
 }
 
 .protocol-stream,
@@ -1751,14 +1722,6 @@ body {
 
   .simulator-toolbar .agent-submit {
     width: 100%;
-  }
-
-  .command-toolbar .flow-options {
-    width: 100%;
-    grid-template-columns: 1fr;
-    border-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0.75rem 0 0;
   }
 
   .public-catalog-grid {

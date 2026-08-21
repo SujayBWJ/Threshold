@@ -32,7 +32,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/style.css?v=agent-ui-17" />
+    <link rel="stylesheet" href="/style.css?v=agent-ui-16" />
   </head>
   <body class="bg-zinc-950 text-zinc-100 antialiased">
     <div id="boot-screen" class="boot-screen" aria-label="Loading Threshold" role="status">
@@ -103,7 +103,7 @@
               <div class="machine-node provider-node"><span class="node-kicker">PROVIDER / AGENT B</span><strong>Threshold Debug Labs</strong><code>POST /api/resolve-incident</code></div>
             </div>
 
-            <div class="simulator-toolbar command-toolbar">
+            <div class="simulator-toolbar">
                 <div><span class="section-kicker">Incident input</span><strong>Tenant isolation failure in <code>src/profile-cache.ts</code></strong><small>Agent discovers, pays, and receives a live provider response.</small></div>
               <div class="flow-options">
                 <label class="network-switch"><input id="network-toggle" type="checkbox" /> <span>Use TestNet</span></label>
@@ -143,7 +143,7 @@
               </div>
               <span class="profile-badge"><span></span> Algorand payment rail</span>
             </div>
-            <div class="metric-grid outcome-metrics">
+            <div class="metric-grid">
               <div class="metric-card"><span>Incidents resolved without human input</span><strong id="metric-runs">0</strong></div>
               <div class="metric-card"><span>Cost per autonomous fix</span><strong id="metric-spend">$0.000 USDC</strong></div>
               <div class="metric-card"><span>Time from failure to patch</span><strong id="metric-duration">--</strong></div>
@@ -158,7 +158,7 @@
             </div>
           </section>
 
-          <section id="catalog-panel" class="catalog-panel catalog-band" aria-labelledby="catalog-title" hidden>
+          <section id="catalog-panel" class="catalog-panel" aria-labelledby="catalog-title" hidden>
             <div class="mb-5 flex items-center justify-between gap-3">
               <div>
                 <p class="text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-500">Capability catalog</p>
