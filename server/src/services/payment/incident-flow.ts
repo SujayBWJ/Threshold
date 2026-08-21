@@ -128,6 +128,10 @@ export async function runIncidentPaymentFlow(options: {
     options.emit({ ...event, timestamp: now() });
   const requestedTestnet = options.useTestnet ?? process.env.X402_NETWORK === "testnet";
   const baseUrl = `http://localhost:${process.env.PORT?.trim() || "4021"}`;
+  let payerAddress: string | undefined;
+  let paymentNetwork = requestedTestnet ? "Algorand TestNet" : "Algorand MainNet";
+  let paymentAsset: string | undefined;
+  let paymentAmount: string | undefined;
 
   try {
     emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${fixture.error.name}: ${fixture.error.message}`, data: { fixture } });
@@ -154,6 +158,9 @@ export async function runIncidentPaymentFlow(options: {
     const advertisedNetwork = typeof accept?.network === "string" ? accept.network : undefined;
     const useTestnet = advertisedNetwork?.includes(ALGORAND_TESTNET_GENESIS_HASH) ?? requestedTestnet;
     const network = networkConfig(useTestnet);
+    paymentNetwork = network.label;
+    paymentAsset = typeof accept?.asset === "string" ? accept.asset : undefined;
+    paymentAmount = typeof accept?.amount === "string" ? accept.amount : undefined;
     const networkNotice = requestedTestnet === useTestnet ? "" : `; using ${network.label} advertised by the 402 requirement`;
     emit({ type: "step", actor: "THRESHOLD GATEWAY", title: "Payment required", detail: `HTTP 402 from ${selected.endpoint}${networkNotice}`, data: { status: unpaid.status, paymentRequired, paymentTerms, amount: accept?.amount, asset: accept?.asset, provider: accept?.payTo, network: accept?.network, networkLabel: network.label } });
 
@@ -162,6 +169,7 @@ export async function runIncidentPaymentFlow(options: {
       : process.env.AVM_MNEMONIC?.trim();
     if (!mnemonic) throw new Error("Missing AVM_MNEMONIC in .env");
     const signer = await signerFromMnemonic(mnemonic);
+    payerAddress = signer.address;
     const expectedPayer = process.env.AVM_PAYER_ADDRESS?.trim();
     if (!options.emptyWallet && expectedPayer && expectedPayer !== signer.address) {
       throw new Error(`AVM_MNEMONIC does not match AVM_PAYER_ADDRESS (${expectedPayer})`);
@@ -187,7 +195,28 @@ export async function runIncidentPaymentFlow(options: {
     emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: "Structured patch returned", detail: "The paid capability returned the live incident-resolution response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    emit({ type: "error", actor: "THRESHOLD FLOW", title: "Payment flow failed", detail: message, data: { error: message } });
+    const insufficientFunds = Boolean(options.emptyWallet && payerAddress);
+    const detail = insufficientFunds
+      ? `Insufficient funds: wallet ${payerAddress} cannot settle ${paymentAmount ? `${paymentAmount} micro-USDC` : "the required USDC payment"} on ${paymentNetwork}. Fund the wallet, then run the task again.`
+      : message;
+    emit({
+      type: "error",
+      actor: "THRESHOLD FLOW",
+      title: insufficientFunds ? "Payment failed: insufficient funds" : "Payment flow failed",
+      detail,
+      data: {
+        error: message,
+        failureReason: insufficientFunds ? "insufficient-funds" : "payment-flow-error",
+        payer: payerAddress,
+        network: paymentNetwork,
+        asset: paymentAsset,
+        amount: paymentAmount,
+        walletExplorerUrl: payerAddress ? `https://lora.algokit.io/${paymentNetwork.includes("TestNet") ? "testnet" : "mainnet"}/account/${payerAddress}` : null,
+        fundingInstructions: insufficientFunds
+          ? "Transfer TestNet ALGO for transaction fees and TestNet USDC ASA 10458941 to this wallet, then run the task again with the funded wallet option."
+          : null,
+      },
+    });
   }
 }
 

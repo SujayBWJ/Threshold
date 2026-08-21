@@ -449,12 +449,24 @@ function addFlowEvent(event) {
   log.querySelector(".trace-loading")?.remove();
   const item = document.createElement("div");
   item.className = `sim-event ${event.type === "error" ? "error" : event.type === "complete" ? "complete" : "pending"}`;
+  const errorData = event.type === "error" ? event.data || {} : null;
+  const fundingGuide = errorData?.failureReason === "insufficient-funds" ? `
+    <details class="flow-error-details">
+      <summary>How to fund this wallet</summary>
+      <div class="flow-error-guide">
+        <p>${escapeHtml(errorData.fundingInstructions || "Fund this wallet, then run the task again.")}</p>
+        ${errorData.walletExplorerUrl ? `<a href="${escapeHtml(errorData.walletExplorerUrl)}" target="_blank" rel="noreferrer">Open wallet on Lora</a>` : ""}
+        <span>After funding, leave Underfunded wallet unchecked and run the task again.</span>
+      </div>
+    </details>
+  ` : "";
   item.innerHTML = `
     <span class="sim-event-marker"></span>
     <div class="sim-event-body">
       <div class="sim-event-meta"><span>${escapeHtml(event.actor)}</span><time>${escapeHtml(new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</time></div>
       <strong>${escapeHtml(event.title)}</strong>
       <code>${escapeHtml(event.detail)}</code>
+      ${fundingGuide}
     </div>
   `;
   log.appendChild(item);
@@ -513,6 +525,8 @@ async function runPaymentFlow() {
 
   button.disabled = true;
   button.classList.add("loading");
+  agentResult.classList.add("hidden");
+  agentResult.innerHTML = "";
   log.innerHTML = `
     <div class="trace-loading" role="status" aria-live="polite">
       <span class="trace-loading-mark"></span>
