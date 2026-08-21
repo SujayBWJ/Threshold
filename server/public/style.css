@@ -37,6 +37,35 @@ body {
   border-right: 0;
   padding-left: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
   padding-right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
+  padding-top: clamp(2.1rem, 4vw, 3.4rem) !important;
+  padding-bottom: clamp(2.1rem, 4vw, 3.4rem) !important;
+  background: linear-gradient(100deg, rgba(24, 24, 27, 0.98), rgba(17, 24, 24, 0.92)) !important;
+}
+
+.headline-content > div:first-child {
+  position: relative;
+}
+
+.headline-content > div:first-child::before {
+  content: "";
+  position: absolute;
+  top: -0.8rem;
+  left: 0;
+  width: 2.4rem;
+  height: 2px;
+  background: var(--accent);
+}
+
+.headline-content .max-w-3xl {
+  max-width: 48rem;
+}
+
+.headline-content .max-w-xl {
+  max-width: 42rem;
+}
+
+.headline-content > div:last-child {
+  flex-shrink: 0;
 }
 
 .boot-screen {
