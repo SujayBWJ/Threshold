@@ -314,7 +314,7 @@ Stop the process using port `4021`, or set another `PORT` in `.env` and restart 
 
 ## Current Scope
 
-Threshold is intentionally focused on proving the agent marketplace loop with two capabilities. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and more flexible capability planning.
+Threshold is intentionally focused on proving the agent marketplace loop with three capabilities: incident resolution, code review, and summarization. The incident demo uses a realistic tenant-isolation cache bug so the provider returns a security-relevant patch rather than a toy arithmetic correction. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and more flexible capability planning.
 
 
 ## Screenshots

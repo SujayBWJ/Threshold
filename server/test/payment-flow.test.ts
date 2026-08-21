@@ -17,11 +17,12 @@ test("builds the Lora MainNet transaction URL", () => {
   );
 });
 
-test("incident fixture matches the returned arithmetic diagnosis", () => {
-  const source = fixture.files.find((file) => file.path === "src/math.ts")?.content;
-  const assertion = fixture.files.find((file) => file.path === "src/math.test.ts")?.content;
+test("incident fixture describes a real tenant-isolation cache bug", () => {
+  const source = fixture.files.find((file) => file.path === "src/profile-cache.ts")?.content;
+  const assertion = fixture.files.find((file) => file.path === "src/profile-cache.test.ts")?.content;
 
-  assert.ok(source?.includes("a * b"));
-  assert.ok(assertion?.includes("divide(10, 2)).toBe(5)"));
-  assert.equal(fixture.error.message, "Expected 5 but received 20");
+  assert.ok(source?.includes("const key = userId"));
+  assert.ok(assertion?.includes("does not share profiles between tenants"));
+  assert.equal(fixture.error.name, "TenantIsolationError");
+  assert.match(fixture.error.message, /acme-eu profile/);
 });

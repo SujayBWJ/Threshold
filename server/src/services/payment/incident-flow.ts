@@ -35,18 +35,24 @@ type Settlement = {
 };
 
 const fixture = {
-  runtime: "node 22",
+  runtime: "node 22 / vitest",
   language: "typescript",
   error: {
-    name: "AssertionError",
-    message: "Expected 5 but received 20",
-    stack: "at divide.test.ts:8:3",
+    name: "TenantIsolationError",
+    message: "Expected acme-eu profile, received acme-us profile after cache hit",
+    stack: "at profile-cache.test.ts:42:7",
   },
   files: [
-    { path: "src/math.ts", content: "export function divide(a: number, b: number) { return a * b; }" },
-    { path: "src/math.test.ts", content: "import { divide } from './math';\nexpect(divide(10, 2)).toBe(5);" },
+    {
+      path: "src/profile-cache.ts",
+      content: "type Profile = { tenantId: string; name: string };\nconst cache = new Map<string, Profile>();\n\nexport async function getProfile(tenantId: string, userId: string, load: () => Promise<Profile>) {\n  const key = userId;\n  const cached = cache.get(key);\n  if (cached) return cached;\n  const profile = await load();\n  cache.set(key, profile);\n  return profile;\n}",
+    },
+    {
+      path: "src/profile-cache.test.ts",
+      content: "import { getProfile } from './profile-cache';\n\ntest('does not share profiles between tenants', async () => {\n  const us = await getProfile('acme-us', 'user-42', async () => ({ tenantId: 'acme-us', name: 'US profile' }));\n  const eu = await getProfile('acme-eu', 'user-42', async () => ({ tenantId: 'acme-eu', name: 'EU profile' }));\n  expect(us.tenantId).toBe('acme-us');\n  expect(eu.tenantId).toBe('acme-eu');\n});",
+    },
   ],
-  constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1 },
+  constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1, security_sensitive: true },
 };
 
 function now() {
