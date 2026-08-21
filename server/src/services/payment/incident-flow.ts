@@ -108,6 +108,11 @@ function decodePaymentRequired(header: string | null): Record<string, unknown> |
   }
 }
 
+function explorerUrl(transaction: string, useTestnet: boolean): string {
+  const host = useTestnet ? "testnet.explorer.perawallet.app" : "explorer.perawallet.app";
+  return `https://${host}/tx/${encodeURIComponent(transaction)}`;
+}
+
 export async function runIncidentPaymentFlow(options: {
   useTestnet?: boolean;
   emptyWallet?: boolean;
@@ -172,7 +177,7 @@ export async function runIncidentPaymentFlow(options: {
 
     const result = await response.json();
     const transaction = settlement?.transaction ?? settlement?.txHash ?? null;
-    emit({ type: "step", actor: "AGENT A -> AGENT B", title: "Paid retry accepted", detail: `POST ${selected.endpoint} returned HTTP ${response.status}`, data: { response: result, settlement, transaction, explorerUrl: transaction ? `https://lora.algonode.cloud/transaction/${transaction}` : null, provider: selected.provider.walletAddress, network: settlement?.network || network.label } });
+    emit({ type: "step", actor: "AGENT A -> AGENT B", title: "Paid retry accepted", detail: `POST ${selected.endpoint} returned HTTP ${response.status}`, data: { response: result, settlement, transaction, explorerUrl: transaction ? explorerUrl(transaction, useTestnet) : null, provider: selected.provider.walletAddress, network: settlement?.network || network.label } });
     emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: "Structured patch returned", detail: "The paid capability returned the live incident-resolution response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
