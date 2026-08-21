@@ -33,7 +33,7 @@ body {
   width: 100vw;
   margin-left: -50vw;
   border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(24, 24, 27, 0.98) !important;
+  background: var(--bg) !important;
 }
 
 .header-band > div {
@@ -52,7 +52,7 @@ body {
   padding-right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
   padding-top: clamp(2.1rem, 4vw, 3.4rem) !important;
   padding-bottom: clamp(2.1rem, 4vw, 3.4rem) !important;
-  background: rgba(24, 24, 27, 0.98) !important;
+  background: var(--bg) !important;
 }
 
 .headline-content > div:first-child {
