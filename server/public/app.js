@@ -413,6 +413,107 @@ function setAgentStatus(message, running = false) {
   agentStatus.innerHTML = `<span class="agent-status-dot"></span><span>${escapeHtml(message)}</span>`;
 }
 
+function addFlowEvent(event) {
+  const log = document.getElementById("simulator-log");
+  if (!log) return;
+  log.querySelector(".sim-empty")?.remove();
+  const item = document.createElement("div");
+  item.className = `sim-event ${event.type === "error" ? "error" : event.type === "complete" ? "complete" : "pending"}`;
+  item.innerHTML = `
+    <span class="sim-event-marker"></span>
+    <div class="sim-event-body">
+      <div class="sim-event-meta"><span>${escapeHtml(event.actor)}</span><time>${escapeHtml(new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</time></div>
+      <strong>${escapeHtml(event.title)}</strong>
+      <code>${escapeHtml(event.detail)}</code>
+    </div>
+  `;
+  log.appendChild(item);
+  item.scrollIntoView({ block: "nearest" });
+}
+
+function updateSettlement(data) {
+  const settlement = data.settlement || {};
+  const transaction = data.transaction || settlement.transaction || settlement.txHash;
+  const payer = settlement.payer || data.payer;
+  const network = settlement.network || data.network;
+  const networkLabel = network?.includes("SGO1GKSzy") ? "Algorand TestNet" : network?.includes("wGHE2Pwd") ? "Algorand MainNet" : network;
+  if (payer) document.getElementById("sim-payer").textContent = formatWallet(payer);
+  if (transaction) {
+    const transactionNode = document.getElementById("sim-tx");
+    transactionNode.innerHTML = `<a href="https://lora.algonode.cloud/transaction/${encodeURIComponent(transaction)}" target="_blank" rel="noreferrer">${escapeHtml(formatWallet(transaction))}</a>`;
+  }
+  if (networkLabel) document.getElementById("sim-network").textContent = networkLabel;
+  if (data.provider) document.getElementById("sim-provider").textContent = formatWallet(data.provider);
+  if (data.asset) document.getElementById("sim-asset").textContent = `USDC · ASA ${data.asset}`;
+  if (data.amount) document.getElementById("sim-amount").textContent = `${data.amount} micro-USDC`;
+}
+
+function renderFlowResult(data) {
+  const result = data.response?.resolution;
+  if (!result) return;
+  const patch = Array.isArray(result.patch) ? result.patch : [];
+  const patchMarkup = patch.map((entry) => `
+    <div class="patch-file"><span>${escapeHtml(entry.path || "provider patch")}</span><pre>${escapeHtml(entry.diff || "No diff returned")}</pre></div>
+  `).join("") || "<p>No patch returned.</p>";
+  agentResult.innerHTML = `
+    <div class="agent-result-header">
+      <div><span class="section-kicker">Live capability response</span><div class="agent-answer"><span class="answer-label">Patch returned by Agent B</span><p>${escapeHtml(result.diagnosis || "Diagnosis returned")}</p></div></div>
+      <strong class="accent-text">${escapeHtml(`${Math.round((result.confidence || 0) * 100)}% CONFIDENCE`)}</strong>
+    </div>
+    <div class="patch-output">${patchMarkup}</div>
+    <div class="agent-trace">
+      <div class="trace-step"><span class="trace-index">01</span><div><strong>Patch</strong><span>${patch.length} file${patch.length === 1 ? "" : "s"} changed</span></div></div>
+      <div class="trace-step"><span class="trace-index">02</span><div><strong>Verification command</strong><span>${escapeHtml(result.verification?.command || "Returned by provider")}</span></div></div>
+      <div class="trace-step"><span class="trace-index">03</span><div><strong>Settlement</strong><span>${escapeHtml(data.transaction || "Facilitator response returned")}</span></div></div>
+    </div>
+  `;
+  agentResult.classList.remove("hidden");
+}
+
+async function runPaymentFlow() {
+  const button = document.getElementById("run-payment-flow");
+  const status = document.getElementById("sim-status");
+  const payer = document.getElementById("sim-payer");
+  const transaction = document.getElementById("sim-tx");
+  const log = document.getElementById("simulator-log");
+  if (!button || !status || !log) return;
+
+  button.disabled = true;
+  button.classList.add("loading");
+  log.innerHTML = "";
+  status.textContent = "RUNNING / MACHINE EXCHANGE";
+  payer.textContent = "waiting for settlement";
+  transaction.textContent = "pending";
+  try {
+    const response = await fetch("/api/agent/run-payment-flow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ network: document.getElementById("network-toggle")?.checked ? "testnet" : "mainnet", wallet: document.getElementById("empty-wallet-toggle")?.checked ? "empty" : "funded" }) });
+    if (!response.ok || !response.body) throw new Error(`Payment flow unavailable (${response.status})`);
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += value;
+      const messages = buffer.split("\n\n");
+      buffer = messages.pop() || "";
+      for (const message of messages) {
+        const line = message.split("\n").find((entry) => entry.startsWith("data: "));
+        if (!line) continue;
+        const event = JSON.parse(line.slice(6));
+        addFlowEvent(event);
+        updateSettlement(event.data || {});
+        status.textContent = event.type === "error" ? "FAILED / SEE TRACE" : event.type === "complete" ? "COMPLETE / PAYMENT SETTLED" : "RUNNING / MACHINE EXCHANGE";
+        if (event.type === "complete") renderFlowResult(event.data || {});
+      }
+    }
+  } catch (error) {
+    addFlowEvent({ actor: "BROWSER OBSERVER", title: "Stream unavailable", detail: error instanceof Error ? error.message : "server unavailable", timestamp: new Date().toISOString(), type: "error" });
+    status.textContent = "FAILED / STREAM CLOSED";
+  } finally {
+    button.disabled = false;
+    button.classList.remove("loading");
+  }
+}
+
 function renderAgentResult(data) {
   const step = data.steps?.[0];
   const resultMarkup = data.intent === "code-review"
@@ -532,6 +633,7 @@ async function fetchCatalog() {
 fetchCatalog();
 renderActivity();
 agentForm?.addEventListener("submit", runAgent);
+document.getElementById("run-payment-flow")?.addEventListener("click", runPaymentFlow);
 siteNav?.addEventListener("click", (event) => {
   const link = event.target.closest("a[href^='#']");
   if (!link) return;

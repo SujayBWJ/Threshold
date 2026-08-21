@@ -11,21 +11,23 @@ import { summarizeRouter } from "./src/routes/summarize.js";
 import { summarizePaidRouter } from "./src/routes/summarize-paid.js";
 import { catalogRouter } from "./src/routes/catalog.js";
 import { agentRouter } from "./src/routes/agent.js";
+import { resolveIncidentRouter } from "./src/routes/resolve-incident.js";
 import {
   getBasePaymentRequirement,
   getPaymentPrice,
   ALGORAND_TESTNET_NETWORK,
+  ALGORAND_MAINNET_NETWORK,
   PAYMENT_NETWORK_LABEL,
   DEFAULT_X402_PRICE,
 } from "./src/config/payment.js";
+import { runPaymentFlowRouter } from "./src/routes/run-payment-flow.js";
 import { paymentMiddleware, x402ResourceServer } from "@x402/hono";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import type { ResourceServerExtension } from "@x402/core/types";
 import { ExactAvmScheme } from "@x402/avm/exact/server";
 import {
   ALGORAND_TESTNET_CAIP2,
-  ALGORAND_TESTNET_GENESIS_HASH,
-  USDC_TESTNET_ASA_ID,
+  ALGORAND_MAINNET_CAIP2,
   isValidAlgorandAddress,
 } from "@x402/avm";
 import {
@@ -72,10 +74,8 @@ for (const [label, address] of [
   }
 }
 
-if (process.env.X402_NETWORK && process.env.X402_NETWORK !== "testnet") {
-  console.error(
-    'Invalid X402_NETWORK: Chunk 2 only supports "testnet". Do not use MainNet yet.',
-  );
+if (process.env.X402_NETWORK && !["testnet", "mainnet"].includes(process.env.X402_NETWORK)) {
+  console.error('Invalid X402_NETWORK: expected "mainnet" or "testnet".');
   process.exit(1);
 }
 
@@ -89,15 +89,23 @@ if (!price.startsWith("$") || Number.isNaN(Number(price.slice(1)))) {
 const facilitatorClient = new HTTPFacilitatorClient({ url: facilitatorUrl });
 const server = new x402ResourceServer(facilitatorClient);
 
-// Register truncated + full TestNet IDs so scheme lookup works either way.
+// Register both networks so TestNet remains an explicit development toggle.
 const avmScheme = new ExactAvmScheme();
 server.register(ALGORAND_TESTNET_CAIP2, avmScheme);
 server.register(ALGORAND_TESTNET_NETWORK, avmScheme);
+server.register(ALGORAND_MAINNET_CAIP2, avmScheme);
+server.register(ALGORAND_MAINNET_NETWORK, avmScheme);
 server.registerExtension(
   bazaarResourceServerExtension as unknown as ResourceServerExtension,
 );
 
-const testDiscovery = declareDiscoveryExtension({
+// The installed extension runtime accepts HTTP method metadata that its type omits.
+const declareHttpDiscovery = (input: Record<string, unknown>) =>
+  declareDiscoveryExtension(input as never);
+
+const testDiscovery = declareHttpDiscovery({
+  method: "GET",
+  input: {},
   output: {
     example: {
       project: "Threshold",
@@ -107,10 +115,10 @@ const testDiscovery = declareDiscoveryExtension({
   },
 });
 
-const codeReviewDiscovery = declareDiscoveryExtension({
-  input: {
-    method: "POST",
-  },
+const codeReviewDiscovery = declareHttpDiscovery({
+  method: "POST",
+  bodyType: "json",
+  input: { code: "string", language: "string" },
   output: {
     example: {
       project: "Threshold",
@@ -143,16 +151,16 @@ const codeReviewDiscovery = declareDiscoveryExtension({
       },
       price: `${DEFAULT_X402_PRICE} USDC per request`,
       network: PAYMENT_NETWORK_LABEL,
-      asset: "USDC ASA 10458941",
+      asset: `USDC ASA ${process.env.X402_NETWORK === "testnet" ? "10458941" : "31566704"}`,
       payTo: providerCodeReviewAddress,
     }
   },
 });
 
-const summarizeDiscovery = declareDiscoveryExtension({
-  input: {
-    method: "POST",
-  },
+const summarizeDiscovery = declareHttpDiscovery({
+  method: "POST",
+  bodyType: "json",
+  input: { text: "string" },
   output: {
     example: {
       project: "Threshold",
@@ -173,8 +181,49 @@ const summarizeDiscovery = declareDiscoveryExtension({
       },
       price: `${DEFAULT_X402_PRICE} USDC per request`,
       network: PAYMENT_NETWORK_LABEL,
-      asset: "USDC ASA 10458941",
+      asset: `USDC ASA ${process.env.X402_NETWORK === "testnet" ? "10458941" : "31566704"}`,
       payTo: providerSummarizeAddress,
+    },
+  },
+});
+
+const incidentDiscovery = declareHttpDiscovery({
+  method: "POST",
+  bodyType: "json",
+  input: {
+    runtime: "node",
+    language: "typescript",
+    error: { name: "TypeError", message: "...", stack: "..." },
+    files: [{ path: "src/index.ts", content: "..." }],
+    constraints: { must_return_patch: true, run_tests: true },
+  },
+  output: {
+    example: {
+      project: "Threshold",
+      api: "Incident Resolution",
+      method: "POST",
+      endpoint: "/api/resolve-incident",
+      description: "Structured debugging and patch generation for autonomous agents",
+      input: {
+        runtime: "node",
+        language: "typescript",
+        error: { name: "TypeError", message: "...", stack: "..." },
+        files: [{ path: "src/index.ts", content: "..." }],
+        constraints: { must_return_patch: true, run_tests: true },
+      },
+      output: {
+        success: true,
+        resolution: {
+          diagnosis: "string",
+          confidence: "number",
+          patch: [{ path: "string", diff: "unified diff" }],
+          verification: { command: "string", expected: "string" },
+        },
+      },
+      price: `${DEFAULT_X402_PRICE} USDC per request`,
+      network: PAYMENT_NETWORK_LABEL,
+      asset: `USDC ASA ${process.env.X402_NETWORK === "testnet" ? "10458941" : "31566704"}`,
+      payTo: providerCodeReviewAddress,
     },
   },
 });
@@ -185,6 +234,7 @@ app.use("/*", serveStatic({ root: "./public" }));
 
 app.route("/api/catalog", catalogRouter);
 app.route("/api/agent", agentRouter);
+app.route("/api/agent/run-payment-flow", runPaymentFlowRouter);
 
 app.use(
   paymentMiddleware(
@@ -207,6 +257,12 @@ app.use(
         mimeType: "application/json",
         extensions: summarizeDiscovery,
       },
+      "POST /api/resolve-incident": {
+        accepts: [getBasePaymentRequirement(price, providerCodeReviewAddress)],
+        description: "Threshold structured incident resolution endpoint",
+        mimeType: "application/json",
+        extensions: incidentDiscovery,
+      },
     },
     server,
   ),
@@ -217,6 +273,7 @@ app.route("/api/code-review", codeReviewRouter);
 app.route("/api/code-review/paid", codeReviewPaidRouter);
 app.route("/api/summarize", summarizeRouter);
 app.route("/api/summarize/paid", summarizePaidRouter);
+app.route("/api/resolve-incident", resolveIncidentRouter);
 
 serve(
   {
@@ -225,8 +282,7 @@ serve(
   },
   (info) => {
     console.log(`Threshold server running at http://localhost:${info.port}`);
-    console.log(`Network: Algorand TestNet (${ALGORAND_TESTNET_NETWORK})`);
-    console.log(`USDC ASA: ${USDC_TESTNET_ASA_ID}`);
+    console.log(`Network: ${PAYMENT_NETWORK_LABEL}`);
     console.log(`Platform payTo (test): ${avmAddress}`);
     console.log(`Code Review provider: ${providerCodeReviewAddress}`);
     console.log(`Summarize provider: ${providerSummarizeAddress}`);

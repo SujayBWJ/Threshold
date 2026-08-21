@@ -64,6 +64,54 @@ export interface CodeReviewResponse {
   suggestions: string[];
 }
 
+export interface IncidentResolutionResponse {
+  diagnosis: string;
+  confidence: number;
+  patch: Array<{ path: string; diff: string }>;
+  verification: { command: string; expected: string };
+}
+
+export async function generateIncidentResolution(input: {
+  runtime: string;
+  language: string;
+  error: unknown;
+  files: unknown[];
+  constraints: unknown;
+}): Promise<IncidentResolutionResponse> {
+  const model = getGeminiModel("application/json");
+  const prompt = `You are a production debugging specialist for an autonomous coding agent.
+Diagnose the incident and return only JSON matching this schema:
+{
+  "diagnosis": "specific root cause",
+  "confidence": 0.0,
+  "patch": [{ "path": "relative/file.ts", "diff": "unified diff" }],
+  "verification": { "command": "test command", "expected": "what passing means" }
+}
+The patch must be minimal, use relative paths, and be directly applicable by an agent.
+Runtime: ${input.runtime}
+Language: ${input.language}
+Error: ${JSON.stringify(input.error)}
+Files: ${JSON.stringify(input.files)}
+Constraints: ${JSON.stringify(input.constraints ?? {})}`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const parsed = JSON.parse(extractJsonObject(result.response.text())) as IncidentResolutionResponse;
+    if (
+      typeof parsed.diagnosis !== "string" ||
+      typeof parsed.confidence !== "number" ||
+      !Array.isArray(parsed.patch) ||
+      typeof parsed.verification?.command !== "string"
+    ) {
+      throw new Error("Malformed incident resolution response");
+    }
+    return parsed;
+  } catch (err) {
+    if (err instanceof AIConfigurationError || err instanceof AIProviderError) throw err;
+    throw new AIProviderError(getProviderErrorMessage(err));
+  }
+}
+
 export async function generateCodeReview(
   code: string,
   language: string,

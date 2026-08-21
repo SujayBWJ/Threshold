@@ -6,7 +6,7 @@
     <title>THRESHOLD — Aggregator Infrastructure</title>
     <meta
       name="description"
-      content="THRESHOLD API Aggregator and x402 marketplace for programmable micropayments on Algorand TestNet."
+      content="THRESHOLD API aggregator and x402 marketplace for programmable micropayments on Algorand."
     />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,10 +29,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/style.css?v=agent-ui-12" />
+    <link rel="stylesheet" href="/style.css?v=agent-ui-14" />
   </head>
   <body class="bg-zinc-950 text-zinc-100 antialiased">
     <div id="boot-screen" class="boot-screen" aria-label="Loading Threshold" role="status">
@@ -69,83 +69,91 @@
               <div class="max-w-3xl">
                 <div class="mb-3 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-zinc-400">
                   <span class="h-1.5 w-1.5 bg-zinc-500"></span>
-                  API Marketplace Runtime
+                  MACHINE-TO-MACHINE EXECUTION LAYER
                 </div>
                 <h1 class="font-sans text-4xl font-semibold tracking-[-0.06em] text-zinc-50 sm:text-5xl">
-                  Programmable Micropayments for AI Agents
+                  Agents call. Agents pay. Work continues.
                 </h1>
                 <p class="mt-4 max-w-xl text-sm text-zinc-400 sm:text-base">
-                  Discover provider APIs, route requests through the x402 payment layer, and settle usage with USDC in milliseconds across the Algorand TestNet.
+                  Threshold is an observable payment rail for autonomous software. Watch an agent hit a capability boundary, pay for specialized expertise, and continue without a human in the loop.
                 </p>
               </div>
               <div class="flex items-center gap-3 self-start xl:self-auto">
                 <button id="catalog-toggle" class="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-amber-400" type="button" aria-expanded="false" aria-controls="catalog-panel">
-                  Launch Catalog
+                  Open API catalog
                   <i data-lucide="chevron-down" class="h-4 w-4"></i>
                 </button>
               </div>
             </div>
           </section>
 
-          <section id="agent-workspace" class="agent-workspace" aria-labelledby="agent-title">
+          <section id="agent-workspace" class="agent-workspace machine-console" aria-labelledby="agent-title">
             <div class="agent-heading">
               <div>
-                <p class="section-kicker">Agent Workspace / private by default</p>
-                <h2 id="agent-title">One request. The right capability.</h2>
-                <p class="agent-copy">Describe the outcome you want. Threshold discovers the right capability, settles access, and returns the result without making you manage providers or endpoints.</p>
+                <p class="section-kicker">Live payment trace</p>
+                <h2 id="agent-title">Two agents. One blocked task.</h2>
+                <p class="agent-copy">Agent A cannot fix a failing test. It discovers Threshold, receives x402 terms, signs a $0.001 USDC payment, and consumes a debugging capability from Agent B.</p>
               </div>
-              <div class="agent-signal"><span></span> Agent runtime ready</div>
+              <div class="agent-signal"><span></span> MainNet ready</div>
             </div>
-            <form id="agent-form" class="agent-form">
-              <div class="mode-switch" role="group" aria-label="Agent task type">
-                <button type="button" class="mode-button active" data-mode="summarize">Summarize</button>
-                <button type="button" class="mode-button" data-mode="code-review">Review code</button>
-                <button type="button" class="mode-button" data-mode="code-review-and-summarize">Review + summarize</button>
-              </div>
-              <label for="agent-task">What should Threshold do?</label>
-              <input id="agent-task" name="task" value="Get me a concise summary" autocomplete="off" />
-              <div id="summary-fields">
-                <label for="agent-text">Text to process</label>
-                <textarea id="agent-text" name="text" rows="7" placeholder="Paste the text you want Threshold to summarize...">Interstice is an API marketplace for AI agents. It helps agents discover specialized APIs, pay for access with x402, and use the result inside a larger workflow.</textarea>
-              </div>
-              <div id="review-fields" class="hidden">
-                <label for="agent-code">Code to review</label>
-                <textarea id="agent-code" name="code" rows="9" placeholder="Paste code to review..."></textarea>
-                <label for="agent-language">Language</label>
-                <input id="agent-language" name="language" value="javascript" autocomplete="off" />
-              </div>
-              <div class="agent-actions">
-                <button class="agent-submit" type="submit"><span>Run agent</span><i data-lucide="arrow-up-right" class="h-4 w-4"></i></button>
-                <span class="agent-price">One controlled TestNet payment per task</span>
-              </div>
-            </form>
-            <div id="agent-status" class="agent-status" aria-live="polite">
-              <span class="agent-status-dot"></span>
-              <span>Waiting for a task</span>
+
+            <div class="machine-topology" aria-label="Machine interaction topology">
+              <div class="machine-node"><span class="node-kicker">CALLER / AGENT A</span><strong>Build Runner</strong><code>needs: bug-resolution</code></div>
+              <div class="topology-wire"><span>HTTP + x402</span><i data-lucide="arrow-right-left"></i></div>
+              <div class="machine-node provider-node"><span class="node-kicker">PROVIDER / AGENT B</span><strong>Threshold Debug Labs</strong><code>POST /api/resolve-incident</code></div>
             </div>
+
+            <div class="simulator-toolbar">
+              <div><span class="section-kicker">Incident input</span><strong>AssertionError in <code>src/math.ts</code></strong><small>Agent discovers, pays, and receives a live provider response.</small></div>
+              <div class="flow-options">
+                <label class="network-switch"><input id="network-toggle" type="checkbox" /> <span>Use TestNet</span></label>
+                <label class="network-switch"><input id="empty-wallet-toggle" type="checkbox" /> <span>Underfunded wallet</span></label>
+              </div>
+              <button id="run-payment-flow" class="agent-submit" type="button"><span>Run autonomous task</span><i data-lucide="play" class="h-4 w-4"></i></button>
+            </div>
+
+            <div class="protocol-grid">
+              <div class="protocol-stream" aria-live="polite">
+                <div class="stream-header"><span>Execution trace</span><span id="sim-status">IDLE / AWAITING AGENT</span></div>
+                <div id="simulator-log" class="simulator-log">
+                  <div class="sim-empty"><i data-lucide="radio"></i><span>Press run to observe the machine-to-machine exchange.</span></div>
+                </div>
+              </div>
+              <aside class="protocol-inspector">
+                <div class="stream-header"><span>Settlement inspector</span><span class="live-label">LIVE DATA</span></div>
+                <div class="inspector-item"><span>Protocol</span><strong>x402 / exact</strong></div>
+                <div class="inspector-item"><span>Network</span><strong id="sim-network">waiting for settlement</strong></div>
+                <div class="inspector-item"><span>Asset</span><strong id="sim-asset">waiting for 402</strong></div>
+                <div class="inspector-item"><span>Amount</span><strong id="sim-amount" class="accent-text">waiting for 402</strong></div>
+                <div class="inspector-item"><span>Payer wallet</span><code id="sim-payer">waiting for signer</code></div>
+                <div class="inspector-item"><span>Provider wallet</span><code id="sim-provider">waiting for 402</code></div>
+                <div class="inspector-item"><span>Transaction</span><code id="sim-tx">not settled</code></div>
+              </aside>
+            </div>
+
             <div id="agent-result" class="agent-result hidden" aria-live="polite"></div>
           </section>
 
           <section id="profile-panel" class="console-section profile-section" aria-labelledby="profile-title">
             <div class="console-heading">
               <div>
-                <p class="section-kicker">Agent Profile / Console</p>
-                <h2 id="profile-title">Your controlled identity for paid work.</h2>
+                <p class="section-kicker">Observed activity</p>
+                <h2 id="profile-title">What the machines have done.</h2>
               </div>
-              <span class="profile-badge"><span></span> TestNet active</span>
+              <span class="profile-badge"><span></span> Algorand payment rail</span>
             </div>
             <div class="metric-grid">
-              <div class="metric-card"><span>Runs completed</span><strong id="metric-runs">0</strong></div>
-              <div class="metric-card"><span>Settled requests</span><strong id="metric-payments">0</strong></div>
-              <div class="metric-card"><span>TestNet spend</span><strong id="metric-spend">$0.000 USDC</strong></div>
+              <div class="metric-card"><span>Observed runs</span><strong id="metric-runs">0</strong></div>
+              <div class="metric-card"><span>x402 settlements</span><strong id="metric-payments">0</strong></div>
+              <div class="metric-card"><span>Algorand USDC spend</span><strong id="metric-spend">$0.000 USDC</strong></div>
             </div>
             <div id="activity-list" class="activity-list">
-              <div class="empty-activity">Run the agent once and your execution trace will appear here.</div>
+              <div class="empty-activity">Run an autonomous task to record an observable machine execution trace.</div>
             </div>
             <div class="profile-grid">
-              <div class="profile-item"><span>Identity</span><strong>Threshold demo agent</strong><small>Browser-local identity, no account required</small></div>
-              <div class="profile-item"><span>Settlement</span><strong>Algorand TestNet</strong><small>USDC payments settle through x402</small></div>
-              <div class="profile-item"><span>Permissions</span><strong>Pay and execute</strong><small>One controlled payment per task</small></div>
+              <div class="profile-item"><span>Caller</span><strong>Build Runner / Agent A</strong><small>Discovers capabilities when blocked</small></div>
+              <div class="profile-item"><span>Payment rail</span><strong>x402 exact on Algorand</strong><small>MainNet by default / TestNet is opt-in</small></div>
+              <div class="profile-item"><span>Observer</span><strong>Human-readable trace</strong><small>Wallet secrets remain outside the browser</small></div>
             </div>
           </section>
 
@@ -174,7 +182,7 @@
       </div>
     </div>
 
-    <script src="/app.js?v=agent-ui-12"></script>
+    <script src="/app.js?v=agent-ui-14"></script>
     <script>
       if (window.lucide) {
         lucide.createIcons();

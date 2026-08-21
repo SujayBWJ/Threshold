@@ -34,6 +34,22 @@ function requireProviderAddress(envVar: string): string {
 export function getApiCatalog(): ApiCatalogEntry[] {
   return [
     {
+      id: "resolve-incident",
+      name: "Incident Resolution",
+      description: "Structured debugging and patch generation for autonomous agents",
+      method: "POST",
+      endpoint: "/api/resolve-incident",
+      price: DEFAULT_X402_PRICE,
+      currency: PAYMENT_CURRENCY,
+      network: PAYMENT_NETWORK_LABEL,
+      category: "agent-infrastructure",
+      capabilities: ["bug-resolution", "patch-generation", "incident-debugging"],
+      provider: {
+        name: "Threshold Debug Labs",
+        walletAddress: requireProviderAddress("PROVIDER_CODE_REVIEW_ADDRESS"),
+      },
+    },
+    {
       id: "code-review",
       name: "AI Code Review",
       description: "AI-powered code review for source code",
