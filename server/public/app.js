@@ -446,6 +446,7 @@ function addFlowEvent(event) {
   const log = document.getElementById("simulator-log");
   if (!log) return;
   log.querySelector(".sim-empty")?.remove();
+  log.querySelector(".trace-loading")?.remove();
   const item = document.createElement("div");
   item.className = `sim-event ${event.type === "error" ? "error" : event.type === "complete" ? "complete" : "pending"}`;
   item.innerHTML = `
@@ -512,7 +513,16 @@ async function runPaymentFlow() {
 
   button.disabled = true;
   button.classList.add("loading");
-  log.innerHTML = "";
+  log.innerHTML = `
+    <div class="trace-loading" role="status" aria-live="polite">
+      <span class="trace-loading-mark"></span>
+      <div class="trace-loading-copy">
+        <strong>Opening payment rail</strong>
+        <span>Connecting to Agent A and waiting for the provider's 402 terms...</span>
+      </div>
+      <div class="trace-loading-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  `;
   status.textContent = "RUNNING / MACHINE EXCHANGE";
   payer.textContent = "waiting for settlement";
   transaction.textContent = "pending";

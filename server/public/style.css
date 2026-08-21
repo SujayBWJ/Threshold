@@ -27,6 +27,18 @@ body {
   min-height: 100vh;
 }
 
+.headline-band {
+  position: relative;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  border-radius: 0 !important;
+  border-left: 0;
+  border-right: 0;
+  padding-left: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
+  padding-right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
+}
+
 .boot-screen {
   position: fixed;
   inset: 0;
@@ -583,6 +595,66 @@ body {
 .live-label { color: var(--amber); }
 
 .simulator-log { display: grid; max-height: 25rem; overflow-y: auto; padding: 0 0.9rem; }
+
+.trace-loading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  min-height: 8rem;
+  padding: 1rem 0.25rem;
+  color: #a1a1aa;
+}
+
+.trace-loading-mark {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-soft), 0 0 22px rgba(215, 255, 95, 0.55);
+  animation: trace-pulse 1.1s ease-in-out infinite;
+}
+
+.trace-loading-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.trace-loading-copy strong {
+  color: #f4f4f5;
+  font-size: 0.82rem;
+}
+
+.trace-loading-copy span {
+  color: #71717a;
+  font: 0.68rem "JetBrains Mono", monospace;
+}
+
+.trace-loading-lines {
+  grid-column: 2;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.trace-loading-lines i {
+  display: block;
+  height: 0.45rem;
+  border-radius: 0.2rem;
+  background: linear-gradient(90deg, rgba(161, 161, 170, 0.18), rgba(215, 255, 95, 0.28), rgba(161, 161, 170, 0.1));
+  background-size: 220% 100%;
+  animation: trace-shimmer 1.6s linear infinite;
+}
+
+.trace-loading-lines i:nth-child(2) { width: 78%; }
+.trace-loading-lines i:nth-child(3) { width: 54%; }
+
+@keyframes trace-pulse {
+  50% { opacity: 0.42; transform: scale(0.72); }
+}
+
+@keyframes trace-shimmer {
+  to { background-position: -220% 0; }
+}
 .sim-empty { display: flex; align-items: center; justify-content: center; gap: 0.6rem; min-height: 14rem; color: #66817e; font: 0.7rem "JetBrains Mono", monospace; text-align: center; }
 .sim-empty svg { width: 1rem; color: var(--teal); }
 .sim-event { display: grid; grid-template-columns: 0.7rem minmax(0, 1fr); gap: 0.7rem; border-bottom: 1px solid rgba(125, 211, 252, 0.1); padding: 0.8rem 0; animation: event-in 300ms ease both; }
