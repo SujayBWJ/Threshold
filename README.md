@@ -248,6 +248,8 @@ pnpm --dir server typecheck
 Run the direct payment tests:
 
 ```bash
+pnpm --dir server run test:pay
+pnpm --dir server run test:pay:resolve-incident
 pnpm --dir server run test:pay:summarize
 pnpm --dir server run test:pay:code-review
 ```
@@ -266,6 +268,17 @@ These tests verify the complete 402 -> sign -> settle -> retry flow against the 
 8. Threshold returns the AI result and settlement transaction metadata.
 
 The default demo price is `$0.001 USDC` per provider request. The composed review-plus-summary flow costs `$0.002 USDC`.
+
+For hackathon judging, keep `X402_NETWORK=testnet`. A successful run produces a fresh
+Algorand TestNet transaction and links it to:
+
+```text
+https://lora.algokit.io/testnet/transaction/<transaction-id>
+```
+
+The live trace also identifies the configured GoPlausible facilitator and exposes the
+catalog selection reason plus rejected alternative capabilities. The underfunded-wallet
+toggle exercises the same SSE flow and emits a real payment failure event.
 
 ## Troubleshooting
 

@@ -444,6 +444,7 @@ function updateSettlement(data) {
     transactionNode.innerHTML = `<a href="https://lora.algokit.io/${networkPath}/transaction/${encodeURIComponent(transaction)}" target="_blank" rel="noreferrer">${escapeHtml(formatWallet(transaction))}</a>`;
   }
   if (networkLabel) document.getElementById("sim-network").textContent = networkLabel;
+  if (data.facilitator) document.getElementById("sim-facilitator").textContent = new URL(data.facilitator).hostname;
   if (data.provider) document.getElementById("sim-provider").textContent = formatWallet(data.provider);
   if (data.asset) document.getElementById("sim-asset").textContent = `USDC · ASA ${data.asset}`;
   if (data.amount) document.getElementById("sim-amount").textContent = `${data.amount} micro-USDC`;

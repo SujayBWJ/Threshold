@@ -132,7 +132,7 @@ export async function runIncidentPaymentFlow(options: {
     const catalog = catalogBody.apis ?? [];
     const selected = selectedCapability(catalog);
     const alternatives = catalog.filter((entry) => entry.id !== selected.id).map((entry) => entry.id);
-    emit({ type: "step", actor: "AGENT A -> CATALOG", title: "Capability selected", detail: `GET /api/catalog -> ${selected.id} matches bug-resolution`, data: { selected, alternatives } });
+    emit({ type: "step", actor: "AGENT A -> CATALOG", title: "Capability selected", detail: `GET /api/catalog -> ${selected.id} matches bug-resolution; alternatives rejected: ${alternatives.join(", ")}`, data: { selected, alternatives, selectionReason: "The incident requires debugging and patch generation, not code review or summarization." } });
 
     const request = {
       method: "POST",
@@ -172,7 +172,7 @@ export async function runIncidentPaymentFlow(options: {
     const response = await wrapFetchWithPayment(fetch, client)(endpoint, request);
     const settlement = settlementFrom(response, client);
     const responseBody = await response.clone().text();
-    emit({ type: "step", actor: "ALGORAND FACILITATOR", title: response.ok ? "Settlement response received" : "Payment response received", detail: response.ok ? "Facilitator verified and settled the payment" : `Paid retry failed with HTTP ${response.status}`, data: { settlement, status: response.status, body: responseBody.slice(0, 1000), paymentResponseHeader: response.headers.get("payment-response") || response.headers.get("x-payment-response") } });
+    emit({ type: "step", actor: "ALGORAND FACILITATOR", title: response.ok ? "Settlement response received" : "Payment response received", detail: response.ok ? "GoPlausible facilitator verified and settled the payment" : `GoPlausible facilitator rejected the paid retry with HTTP ${response.status}`, data: { settlement, status: response.status, facilitator: process.env.FACILITATOR_URL, body: responseBody.slice(0, 1000), paymentResponseHeader: response.headers.get("payment-response") || response.headers.get("x-payment-response") } });
     if (!response.ok) throw new Error(`Paid request failed with HTTP ${response.status}: ${responseBody.slice(0, 500)}`);
 
     const result = await response.json();
