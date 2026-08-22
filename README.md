@@ -270,6 +270,26 @@ http://localhost:4021
 
 The server serves the frontend from `server/public` and the API from the same Hono process.
 
+## Deploy For Judging
+
+This project requires a long-running Node service because the incident flow uses SSE,
+x402 facilitator requests, and server-side wallet signing. A static host such as GitHub
+Pages cannot run the complete demo.
+
+The repository includes [`render.yaml`](render.yaml) for Render. To deploy:
+
+1. Create a new Render Blueprint and select this GitHub repository.
+2. Render reads `render.yaml`, installs the pnpm workspace, and starts `pnpm --dir server start`.
+3. Enter the `sync: false` values in Render's environment settings. Copy them from your local
+  `.env` without committing them.
+4. Keep `X402_NETWORK=testnet` for judging and wait for `/api/catalog` to pass its health check.
+5. Open the deployed `onrender.com` URL and run the flow from the browser.
+
+Required secret values are `AVM_ADDRESS`, `AVM_MNEMONIC`, `AVM_PAYER_ADDRESS`,
+`PROVIDER_CODE_REVIEW_ADDRESS`, `PROVIDER_SUMMARIZE_ADDRESS`, `GEMINI_API_KEY`, and
+optionally `PROVIDER_SECURITY_SCAN_ADDRESS`. `FACILITATOR_URL` and the non-secret demo
+settings are already defined in the blueprint.
+
 ## Validation
 
 Run the TypeScript check:

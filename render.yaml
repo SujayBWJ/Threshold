@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: threshold
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --dir server start
+    healthCheckPath: /api/catalog
+    envVars:
+      - key: AVM_ADDRESS
+        sync: false
+      - key: FACILITATOR_URL
+        value: https://facilitator.goplausible.xyz
+      - key: AVM_MNEMONIC
+        sync: false
+      - key: AVM_PAYER_ADDRESS
+        sync: false
+      - key: PROVIDER_CODE_REVIEW_ADDRESS
+        sync: false
+      - key: PROVIDER_SUMMARIZE_ADDRESS
+        sync: false
+      - key: PROVIDER_SECURITY_SCAN_ADDRESS
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: X402_PRICE
+        value: "$0.001"
+      - key: X402_NETWORK
+        value: testnet
