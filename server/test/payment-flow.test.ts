@@ -53,6 +53,17 @@ test("provider patch is applied on disk before the fixture test runs", async () 
   assert.match(result.changed[0]?.content || "", /return a \/ b/);
 });
 
+test("provider hunk-only patches are normalized with their target file header", async () => {
+  const result = await verifyResolution(incidentFixtures.divide, {
+    patch: [{
+      path: "src/math.ts",
+      diff: "@@ -1,3 +1,3 @@\n export function divide(a: number, b: number): number {\n-  return a * b;\n+  return a / b;\n }",
+    }],
+  });
+
+  assert.match(result.changed[0]?.content || "", /return a \/ b/);
+});
+
 test("dependency scan finds current feed data that passing tests cannot detect", () => {
   const result = scanDependencies({
     dependencies: incidentFixtures["dependency-scan"].dependencies || {},

@@ -157,9 +157,13 @@ function decodePaymentRequired(header: string | null): Record<string, unknown> |
   }
 }
 
-function patchText(diff: unknown): string {
+function patchText(diff: unknown, path: string): string {
   if (typeof diff !== "string") throw new Error("Provider returned a patch without diff text");
-  return diff.replace(/^```(?:diff|patch)?\s*/i, "").replace(/\s*```$/, "").trim() + "\n";
+  const text = diff.replace(/^```(?:diff|patch)?\s*/i, "").replace(/\s*```$/, "").trim();
+  if (text.startsWith("@@")) {
+    return `diff --git a/${path} b/${path}\n--- a/${path}\n+++ b/${path}\n${text}\n`;
+  }
+  return `${text}\n`;
 }
 
 export async function verifyResolution(selectedFixture: typeof fixture, resolution: { patch?: Array<{ path?: string; diff?: string }> }) {
@@ -178,7 +182,7 @@ export async function verifyResolution(selectedFixture: typeof fixture, resoluti
       if (!selectedFixture.files.some((file) => file.path === entry.path)) {
         throw new Error(`Provider patch targets unexpected file: ${entry.path || "unknown"}`);
       }
-      return patchText(entry.diff);
+      return patchText(entry.diff, entry.path as string);
     }).join("\n");
     const patchPath = join(workspace, ".threshold-provider.patch");
     await writeFile(patchPath, patch, "utf8");
