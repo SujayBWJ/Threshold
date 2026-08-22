@@ -304,6 +304,15 @@ export async function runIncidentPaymentFlow(options: {
     emit({ type: "step", actor: "AGENT A / BURNER WALLET", title: "Wallet loaded", detail: `Signer loaded on ${network.label}`, data: { payer: signer.address, network: network.label } });
 
     const client = new x402Client();
+    // x402/fetch 2.23+ rejects non-default assets until the client explicitly
+    // opts in. Restrict this payer to precisely the asset/network advertised by
+    // the payment gate rather than disabling spend controls globally.
+    if (!advertisedNetwork || !paymentAsset) {
+      throw new Error("Payment requirement did not include an asset and network");
+    }
+    client.setSpendControls({
+      allowedAssets: [{ network: advertisedNetwork as Network, asset: paymentAsset }],
+    });
     const scheme = new ExactAvmScheme(signer);
     client.register(network.caip, scheme);
     client.register(network.genesis, scheme);
