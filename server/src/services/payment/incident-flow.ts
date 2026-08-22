@@ -191,10 +191,15 @@ export async function verifyResolution(selectedFixture: typeof fixture, resoluti
     const testFile = selectedFixture.files.find((file) => file.path.endsWith(".test.ts"));
     if (!testFile) throw new Error("Fixture has no test file to verify");
     const testPath = resolve(workspace, testFile.path);
-    if (process.platform === "win32") {
-      await execFileAsync("cmd.exe", ["/d", "/c", `pnpm exec tsx --test ${testPath}`], { cwd: process.cwd() });
-    } else {
-      await execFileAsync("pnpm", ["exec", "tsx", "--test", testPath], { cwd: process.cwd() });
+    try {
+      if (process.platform === "win32") {
+        await execFileAsync("cmd.exe", ["/d", "/c", `pnpm exec tsx --test ${testPath}`], { cwd: process.cwd() });
+      } else {
+        await execFileAsync("pnpm", ["exec", "tsx", "--test", testPath], { cwd: process.cwd() });
+      }
+    } catch (error) {
+      const commandError = error as { stderr?: string; stdout?: string; message?: string };
+      throw new Error([commandError.message, commandError.stderr, commandError.stdout].filter(Boolean).join("\n").trim());
     }
     const changed = await Promise.all((resolution.patch ?? []).map(async (entry) => ({
       path: entry.path,
