@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { explorerUrl, incidentFixtures, verifyResolution } from "../src/services/payment/incident-flow.js";
+import { explorerUrl, incidentFixtures, loadDependencyManifest, verifyResolution } from "../src/services/payment/incident-flow.js";
 import { scanDependencies } from "../src/services/security/dependency-scan.js";
 
 test("builds the required Lora TestNet transaction URL", () => {
@@ -53,13 +53,20 @@ test("provider patch is applied on disk before the fixture test runs", async () 
 });
 
 test("dependency scan finds current feed data that passing tests cannot detect", () => {
-  const result = scanDependencies(incidentFixtures["dependency-scan"].dependencies ? {
-    dependencies: incidentFixtures["dependency-scan"].dependencies,
+  const result = scanDependencies({
+    dependencies: incidentFixtures["dependency-scan"].dependencies || {},
     lockfileVersion: 3,
-  } : { dependencies: {} });
+  });
 
   assert.equal(result.clean, false);
   assert.equal(result.findings[0]?.package, "demo-xml-parser");
   assert.equal(result.findings[0]?.recommendedVersion, "1.4.1");
   assert.match(result.findings[0]?.vulnerability || "", /THRESHOLD-DEMO/);
+});
+
+test("dependency scan reads the fixture manifest and returns zero for a fixed version", async () => {
+  const dependencies = await loadDependencyManifest(incidentFixtures["dependency-scan"].manifestPath || "");
+  assert.equal(dependencies["demo-xml-parser"], "1.4.0");
+  assert.equal(scanDependencies({ dependencies }).findings.length, 1);
+  assert.equal(scanDependencies({ dependencies: { "demo-xml-parser": "1.4.1" } }).findings.length, 0);
 });

@@ -52,6 +52,7 @@ export const incidentFixtures: Record<IncidentBugId, {
   error: { name: string; message: string; stack: string };
   files: Array<{ path: string; content: string }>;
   dependencies?: Record<string, string>;
+  manifestPath?: string;
   constraints: Record<string, unknown>;
 }> = {
   divide: {
@@ -89,6 +90,7 @@ export const incidentFixtures: Record<IncidentBugId, {
       { path: "README.md", content: "# Fixture project\n\nRuntime behavior is covered by passing tests.\n" },
     ],
     dependencies: { "demo-xml-parser": "1.4.0" },
+    manifestPath: "fixtures/dependency-scan/package.json",
     constraints: { must_return_scan: true, query_external_security_feed: true, return_recommended_version: true },
   },
 };
@@ -200,6 +202,11 @@ export async function verifyResolution(selectedFixture: typeof fixture, resoluti
   }
 }
 
+export async function loadDependencyManifest(manifestPath: string): Promise<Record<string, string>> {
+  const manifest = JSON.parse(await readFile(resolve(process.cwd(), manifestPath), "utf8")) as { dependencies?: Record<string, string> };
+  return manifest.dependencies ?? {};
+}
+
 export function explorerUrl(transaction: string, useTestnet: boolean): string {
   const networkPath = useTestnet ? "testnet" : "mainnet";
   return `https://lora.algokit.io/${networkPath}/transaction/${encodeURIComponent(transaction)}`;
@@ -226,6 +233,9 @@ export async function runIncidentPaymentFlow(options: {
   let verificationStarted = false;
 
   try {
+    if (selectedFixture.id === "dependency-scan" && selectedFixture.manifestPath) {
+      requestBody.dependencies = await loadDependencyManifest(selectedFixture.manifestPath);
+    }
     emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${selectedFixture.error.name}: ${selectedFixture.error.message}`, data: { fixture: selectedFixture, requestBody } });
     emit({ type: "step", actor: "AGENT A / TOOL REGISTRY", title: "Threshold tool available", detail: `${thresholdTool.name}: ${thresholdTool.description}`, data: { tool: thresholdTool } });
 
@@ -292,7 +302,7 @@ export async function runIncidentPaymentFlow(options: {
     const transaction = settlement?.transaction ?? settlement?.txHash ?? null;
     emit({ type: "step", actor: "AGENT A -> AGENT B", title: "Paid retry accepted", detail: `POST ${selected.endpoint} returned HTTP ${response.status}`, data: { response: result, settlement, transaction, explorerUrl: transaction ? explorerUrl(transaction, useTestnet) : null, provider: selected.provider.walletAddress, network: settlement?.network || network.label } });
     if (selectedFixture.id === "dependency-scan") {
-      emit({ type: "step", actor: "AGENT A / SECURITY VERIFIER", title: "Dependency scan completed", detail: `${result.scan?.findings?.length ?? 0} vulnerability finding(s) returned from the current security feed`, data: { scan: result.scan, externalLookup: true } });
+      emit({ type: "step", actor: "AGENT A / SECURITY VERIFIER", title: "Dependency scan completed", detail: `${result.scan?.findings?.length ?? 0} vulnerability finding(s) returned from the OSV-compatible mock security feed`, data: { scan: result.scan, externalLookup: true } });
     } else {
       verificationStarted = true;
       if (!result.resolution) throw new Error("Provider returned no incident resolution");
