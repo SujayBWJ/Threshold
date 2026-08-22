@@ -1,5 +1,8 @@
 {
 	"packageManager": "pnpm@11.21.0",
+	"engines": {
+		"node": ">=22.0.0"
+	},
 	"dependencies": {
 		"@hono/node-server": "^2.1.0",
 		"@x402-avm/extensions": "^2.6.1",
