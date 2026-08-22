@@ -14,6 +14,8 @@ A user describes an outcome instead of choosing a provider or learning an endpoi
 - AI code review
 - Composed code review followed by summarization
 - A login-free local Agent Profile console with usage history
+- A live incident-resolution flow with selectable divide and regional-cache fixtures
+- Structured patch display, sandbox application, and real test verification
 
 The current demo uses a controlled TestNet payer wallet on the server. This is suitable for a prototype and should be replaced by user- or agent-authorized spending before production use.
 
@@ -42,6 +44,22 @@ Code and task
   -> Concise final explanation
 ```
 
+An incident-resolution request follows this path:
+
+```text
+Failing fixture and source files
+  -> Agent A tool registration
+  -> GET /api/catalog
+  -> Bug-resolution capability selected
+  -> Unpaid POST /api/resolve-incident
+  -> HTTP 402 payment terms
+  -> x402 USDC signing and facilitator settlement
+  -> Paid retry with the same incident payload
+  -> Structured diagnosis and unified diff
+  -> Temporary workspace patch application
+  -> Real fixture test verification
+```
+
 ## Features
 
 ### Agent Workspace
@@ -52,7 +70,7 @@ The main workspace supports three modes:
 - **Review code**: inspect code for bugs, security concerns, correctness, and maintainability
 - **Review + summarize**: pay for both capabilities and turn the detailed review into a concise explanation
 
-Each completed run returns an execution trace containing the selected capability, provider label, payment status, transaction ID, and total cost.
+The incident workspace also lets the user select the divide or regional-cache fixture, choose TestNet or MainNet, and trigger an underfunded-wallet failure. Each run returns a live SSE trace containing the selected capability, exact incident payload, payment status, transaction ID, patch, and verification result.
 
 ### Public Catalog
 
@@ -103,6 +121,8 @@ flowchart TD
 - `server/src/services/agent/run.ts`: deterministic agent intent routing and composition
 - `server/src/services/payment/summarize.ts`: x402 payer and summarizer relay
 - `server/src/services/payment/code-review.ts`: x402 payer and code-review relay
+- `server/src/services/payment/incident-flow.ts`: incident fixtures, x402 payment flow, patch application, and sandbox verification
+- `server/src/services/agent/tools.ts`: explicit `threshold.resolveIncident` tool registration metadata
 - `server/src/services/ai/gemini.ts`: Gemini prompts, response parsing, and provider error handling
 - `server/public/index.html`: application shell and Agent Profile sections
 - `server/public/app.js`: agent interactions, catalog disclosure, local activity history, and UI state
@@ -165,7 +185,16 @@ These routes are protected by x402 middleware and normally called through the pa
 GET  /api/test
 POST /api/code-review
 POST /api/summarize
+POST /api/resolve-incident
 ```
+
+The browser incident trace is streamed by:
+
+```text
+POST /api/agent/run-payment-flow
+```
+
+It accepts `network` (`testnet` or `mainnet`), `wallet` (`funded` or `empty`), and `bug` (`divide` or `regional-cache`).
 
 The demo relays are:
 
@@ -280,6 +309,13 @@ The live trace also identifies the configured GoPlausible facilitator and expose
 catalog selection reason plus rejected alternative capabilities. The underfunded-wallet
 toggle exercises the same SSE flow and emits a real payment failure event.
 
+The incident flow sends the full fixture as JSON, including the failing source files,
+test file, error name/message/stack, runtime, language, and constraints. After payment,
+the provider's returned unified diff is applied with `git apply` inside a temporary
+verification workspace. The selected fixture test runs against the modified file, and
+the flow emits `Verification passed` only when that test succeeds. This sandbox keeps
+the demo honest without modifying the repository running the server.
+
 ## Troubleshooting
 
 ### Gemini quota error
@@ -314,13 +350,13 @@ Stop the process using port `4021`, or set another `PORT` in `.env` and restart 
 
 ## Current Scope
 
-Threshold is intentionally focused on proving the agent marketplace loop with three capabilities: incident resolution, code review, and summarization. The incident demo uses a realistic tenant-isolation cache bug so the provider returns a security-relevant patch rather than a toy arithmetic correction. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and more flexible capability planning.
+Threshold is intentionally focused on proving the agent marketplace loop with three capabilities: incident resolution, code review, and summarization. The incident demo includes two independently selectable fixtures: an arithmetic defect in `src/math.ts` and a regional cache-key isolation defect in `src/cache/userLookup.ts`. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and applying approved patches in a user's actual workspace.
 
 
 ## Screenshots
-<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM" src="https://github.com/user-attachments/assets/b9e9b586-e98b-42e3-8e46-715470b886bc" />
-<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (1)" src="https://github.com/user-attachments/assets/d722c13d-fb3d-44bb-b419-e48dc901c010" />
-<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (2)" src="https://github.com/user-attachments/assets/4ee811ec-10f2-4762-8b75-7d1a474fec17" />
-<img width="1600" height="899" alt="WhatsApp Image 2026-08-19 at 9 34 53 PM (3)" src="https://github.com/user-attachments/assets/d0450716-1d0a-423c-9924-7bbfdc214215" />
+Current site screenshots captured from the local server at `http://localhost:4021`:
+
+<img width="1440" alt="Current Threshold desktop workspace" src="threshold-current-desktop.png" />
+<img width="390" alt="Current Threshold mobile workspace" src="threshold-current-mobile.png" />
 
 
