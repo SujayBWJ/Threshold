@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
   runIncidentPaymentFlow,
+  type IncidentBugId,
   type IncidentFlowEvent,
 } from "../services/payment/incident-flow.js";
 
@@ -17,13 +18,14 @@ runPaymentFlowRouter.post("/", async (c) => {
   const options = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
   const useTestnet = options.network === "testnet";
   const emptyWallet = options.wallet === "empty";
+  const bugId = options.bug === "regional-cache" ? "regional-cache" : "divide";
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
       const send = (event: IncidentFlowEvent) => {
         controller.enqueue(encoder.encode(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`));
       };
-      void runIncidentPaymentFlow({ useTestnet, emptyWallet, emit: send }).finally(() => controller.close());
+      void runIncidentPaymentFlow({ useTestnet, emptyWallet, bugId: bugId as IncidentBugId, emit: send }).finally(() => controller.close());
     },
   });
 

@@ -18,6 +18,7 @@ let catalogReturnInProgress = false;
 let returnTarget = null;
 const activityStorageKey = "threshold.incident.ledger.v1";
 const bootScreen = document.getElementById("boot-screen");
+let selectedBug = "divide";
 
 window.addEventListener("load", () => {
   window.setTimeout(() => bootScreen?.classList.add("is-ready"), 1800);
@@ -409,7 +410,7 @@ function saveIncidentActivity(events) {
   const settlement = events.find((event) => event.data?.settlement?.success);
   const cost = settlement ? 0.001 : 0;
   const item = {
-    incident: first?.data?.fixture?.files?.find((file) => file.path === "src/profile-cache.ts") ? "Tenant profile cache collision in src/profile-cache.ts" : "Autonomous incident resolution",
+    incident: first?.data?.fixture?.id === "regional-cache" ? "Regional cache collision in src/cache/userLookup.ts" : "Divide failure in src/math.ts",
     outcome: complete ? "resolved" : "failed",
     reason: complete ? "Structured patch returned" : error?.detail || "Payment flow failed",
     cost,
@@ -450,6 +451,12 @@ function addFlowEvent(event) {
   const item = document.createElement("div");
   item.className = `sim-event ${event.type === "error" ? "error" : event.type === "complete" ? "complete" : "pending"}`;
   const errorData = event.type === "error" ? event.data || {} : null;
+  const payloadEvidence = event.title === "Incident detected" && event.data?.fixture ? `
+    <details class="flow-payload-details">
+      <summary>View incident payload sent to provider</summary>
+      <pre>${escapeHtml(JSON.stringify(event.data.fixture, null, 2))}</pre>
+    </details>
+  ` : "";
   const fundingGuide = errorData?.failureReason === "insufficient-funds" ? `
     <details class="flow-error-details">
       <summary>How to fund this wallet</summary>
@@ -466,6 +473,7 @@ function addFlowEvent(event) {
       <div class="sim-event-meta"><span>${escapeHtml(event.actor)}</span><time>${escapeHtml(new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</time></div>
       <strong>${escapeHtml(event.title)}</strong>
       <code>${escapeHtml(event.detail)}</code>
+      ${payloadEvidence}
       ${fundingGuide}
     </div>
   `;
@@ -541,7 +549,7 @@ async function runPaymentFlow() {
   payer.textContent = "waiting for settlement";
   transaction.textContent = "pending";
   try {
-    const response = await fetch("/api/agent/run-payment-flow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ network: document.getElementById("network-toggle")?.checked ? "testnet" : "mainnet", wallet: document.getElementById("empty-wallet-toggle")?.checked ? "empty" : "funded" }) });
+    const response = await fetch("/api/agent/run-payment-flow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bug: selectedBug, network: document.getElementById("network-toggle")?.checked ? "testnet" : "mainnet", wallet: document.getElementById("empty-wallet-toggle")?.checked ? "empty" : "funded" }) });
     if (!response.ok || !response.body) throw new Error(`Payment flow unavailable (${response.status})`);
     const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
     let buffer = "";
@@ -694,6 +702,12 @@ fetchCatalog();
 renderActivity();
 agentForm?.addEventListener("submit", runAgent);
 document.getElementById("run-payment-flow")?.addEventListener("click", runPaymentFlow);
+document.querySelectorAll(".bug-option").forEach((button) => button.addEventListener("click", () => {
+  selectedBug = button.dataset.bug || "divide";
+  document.querySelectorAll(".bug-option").forEach((option) => option.classList.toggle("is-selected", option === button));
+  const label = document.getElementById("incident-label");
+  if (label) label.innerHTML = selectedBug === "regional-cache" ? "Regional lookup failure in <code>src/cache/userLookup.ts</code>" : "Divide failure in <code>src/math.ts</code>";
+}));
 siteNav?.addEventListener("click", (event) => {
   const link = event.target.closest("a[href^='#']");
   if (!link) return;

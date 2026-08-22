@@ -1,5 +1,10 @@
 import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
 import { randomBytes } from "node:crypto";
+import { execFile } from "node:child_process";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { promisify } from "node:util";
 import {
   toClientAvmSigner,
   ExactAvmScheme,
@@ -15,6 +20,9 @@ import {
 import { mnemonicFromSeed, seedFromMnemonic } from "@algorandfoundation/algokit-utils/algo25";
 import type { Network } from "@x402/core/types";
 import { getApiCatalog, type ApiCatalogEntry } from "../../catalog/apis.js";
+import { thresholdTool } from "../agent/tools.js";
+
+const execFileAsync = promisify(execFile);
 
 export type IncidentFlowEvent = {
   type: "step" | "error" | "complete";
@@ -34,26 +42,44 @@ type Settlement = {
   [key: string]: unknown;
 };
 
-const fixture = {
-  runtime: "node 22 / vitest",
-  language: "typescript",
-  error: {
-    name: "TenantIsolationError",
-    message: "Expected acme-eu profile, received acme-us profile after cache hit",
-    stack: "at profile-cache.test.ts:42:7",
+export type IncidentBugId = "divide" | "regional-cache";
+
+export const incidentFixtures: Record<IncidentBugId, {
+  id: IncidentBugId;
+  label: string;
+  runtime: string;
+  language: string;
+  error: { name: string; message: string; stack: string };
+  files: Array<{ path: string; content: string }>;
+  constraints: Record<string, unknown>;
+}> = {
+  divide: {
+    id: "divide",
+    label: "Divide bug",
+    runtime: "node 22 / vitest",
+    language: "typescript",
+    error: { name: "AssertionError", message: "Expected 5 but received 20", stack: "at math.test.ts:4:22" },
+    files: [
+      { path: "src/math.ts", content: "export function divide(a: number, b: number): number {\n  return a * b;\n}" },
+      { path: "src/math.test.ts", content: "import { divide } from './math';\n\ntest('divides two numbers', () => {\n  expect(divide(10, 2)).toBe(5);\n});" },
+    ],
+    constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1 },
   },
-  files: [
-    {
-      path: "src/profile-cache.ts",
-      content: "type Profile = { tenantId: string; name: string };\nconst cache = new Map<string, Profile>();\n\nexport async function getProfile(tenantId: string, userId: string, load: () => Promise<Profile>) {\n  const key = userId;\n  const cached = cache.get(key);\n  if (cached) return cached;\n  const profile = await load();\n  cache.set(key, profile);\n  return profile;\n}",
-    },
-    {
-      path: "src/profile-cache.test.ts",
-      content: "import { getProfile } from './profile-cache';\n\ntest('does not share profiles between tenants', async () => {\n  const us = await getProfile('acme-us', 'user-42', async () => ({ tenantId: 'acme-us', name: 'US profile' }));\n  const eu = await getProfile('acme-eu', 'user-42', async () => ({ tenantId: 'acme-eu', name: 'EU profile' }));\n  expect(us.tenantId).toBe('acme-us');\n  expect(eu.tenantId).toBe('acme-eu');\n});",
-    },
-  ],
-  constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1, security_sensitive: true },
+  "regional-cache": {
+    id: "regional-cache",
+    label: "Regional cache bug",
+    runtime: "node 22 / vitest",
+    language: "typescript",
+    error: { name: "RegionCacheIsolationError", message: "Expected eu-west profile, received us-east profile after cache hit", stack: "at userLookup.test.ts:10:29" },
+    files: [
+      { path: "src/cache/userLookup.ts", content: "type User = { id: string; region: string; name: string };\nconst cache = new Map<string, User>();\n\nexport async function findUser(userId: string, region: string, load: () => Promise<User>) {\n  const key = userId;\n  const cached = cache.get(key);\n  if (cached) return cached;\n  const user = await load();\n  cache.set(key, user);\n  return user;\n}" },
+      { path: "src/cache/userLookup.test.ts", content: "import { findUser } from './userLookup';\n\ntest('does not share users between regions', async () => {\n  const us = await findUser('user-42', 'us-east', async () => ({ id: 'user-42', region: 'us-east', name: 'US user' }));\n  const eu = await findUser('user-42', 'eu-west', async () => ({ id: 'user-42', region: 'eu-west', name: 'EU user' }));\n  expect(us.region).toBe('us-east');\n  expect(eu.region).toBe('eu-west');\n});" },
+    ],
+    constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1, security_sensitive: true },
+  },
 };
+
+const fixture = incidentFixtures.divide;
 
 function now() {
   return new Date().toISOString();
@@ -114,6 +140,51 @@ function decodePaymentRequired(header: string | null): Record<string, unknown> |
   }
 }
 
+function patchText(diff: unknown): string {
+  if (typeof diff !== "string") throw new Error("Provider returned a patch without diff text");
+  return diff.replace(/^```(?:diff|patch)?\s*/i, "").replace(/\s*```$/, "").trim() + "\n";
+}
+
+export async function verifyResolution(selectedFixture: typeof fixture, resolution: { patch?: Array<{ path?: string; diff?: string }> }) {
+  const workspace = await mkdtemp(join(tmpdir(), "threshold-incident-"));
+  try {
+    for (const file of selectedFixture.files) {
+      const target = resolve(workspace, file.path);
+      if (!target.startsWith(resolve(workspace) + "\\") && !target.startsWith(resolve(workspace) + "/")) {
+        throw new Error(`Fixture path escapes verification workspace: ${file.path}`);
+      }
+      await mkdir(dirname(target), { recursive: true });
+      await writeFile(target, file.content, "utf8");
+    }
+    await execFileAsync("git", ["init", "--quiet"], { cwd: workspace });
+    const patch = (resolution.patch ?? []).map((entry) => {
+      if (!selectedFixture.files.some((file) => file.path === entry.path)) {
+        throw new Error(`Provider patch targets unexpected file: ${entry.path || "unknown"}`);
+      }
+      return patchText(entry.diff);
+    }).join("\n");
+    const patchPath = join(workspace, ".threshold-provider.patch");
+    await writeFile(patchPath, patch, "utf8");
+    await execFileAsync("git", ["apply", "--check", "--recount", "--inaccurate-eof", "--whitespace=nowarn", patchPath], { cwd: workspace });
+    await execFileAsync("git", ["apply", "--recount", "--inaccurate-eof", "--whitespace=nowarn", patchPath], { cwd: workspace });
+    const testFile = selectedFixture.files.find((file) => file.path.endsWith(".test.ts"));
+    if (!testFile) throw new Error("Fixture has no test file to verify");
+    const testPath = resolve(workspace, testFile.path);
+    if (process.platform === "win32") {
+      await execFileAsync("cmd.exe", ["/d", "/c", `pnpm exec tsx --test ${testPath}`], { cwd: process.cwd() });
+    } else {
+      await execFileAsync("pnpm", ["exec", "tsx", "--test", testPath], { cwd: process.cwd() });
+    }
+    const changed = await Promise.all((resolution.patch ?? []).map(async (entry) => ({
+      path: entry.path,
+      content: await readFile(resolve(workspace, entry.path as string), "utf8"),
+    })));
+    return { command: `pnpm exec tsx --test ${testFile.path}`, changed };
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+}
+
 export function explorerUrl(transaction: string, useTestnet: boolean): string {
   const networkPath = useTestnet ? "testnet" : "mainnet";
   return `https://lora.algokit.io/${networkPath}/transaction/${encodeURIComponent(transaction)}`;
@@ -122,6 +193,7 @@ export function explorerUrl(transaction: string, useTestnet: boolean): string {
 export async function runIncidentPaymentFlow(options: {
   useTestnet?: boolean;
   emptyWallet?: boolean;
+  bugId?: IncidentBugId;
   emit: (event: IncidentFlowEvent) => void;
 }): Promise<void> {
   const emit = (event: Omit<IncidentFlowEvent, "timestamp">) =>
@@ -132,9 +204,12 @@ export async function runIncidentPaymentFlow(options: {
   let paymentNetwork = requestedTestnet ? "Algorand TestNet" : "Algorand MainNet";
   let paymentAsset: string | undefined;
   let paymentAmount: string | undefined;
+  const selectedFixture = incidentFixtures[options.bugId ?? "divide"];
+  let verificationStarted = false;
 
   try {
-    emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${fixture.error.name}: ${fixture.error.message}`, data: { fixture } });
+    emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${selectedFixture.error.name}: ${selectedFixture.error.message}`, data: { fixture: selectedFixture } });
+    emit({ type: "step", actor: "AGENT A / TOOL REGISTRY", title: "Threshold tool available", detail: `${thresholdTool.name}: ${thresholdTool.description}`, data: { tool: thresholdTool } });
 
     const catalogResponse = await fetch(`${baseUrl}/api/catalog`);
     if (!catalogResponse.ok) throw new Error(`Catalog request failed (${catalogResponse.status})`);
@@ -147,7 +222,7 @@ export async function runIncidentPaymentFlow(options: {
     const request = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fixture),
+      body: JSON.stringify(selectedFixture),
     };
     const endpoint = `${baseUrl}${selected.endpoint}`;
     const unpaid = await fetch(endpoint, request);
@@ -189,9 +264,14 @@ export async function runIncidentPaymentFlow(options: {
     emit({ type: "step", actor: "ALGORAND FACILITATOR", title: response.ok ? "Settlement response received" : "Payment response received", detail: response.ok ? "GoPlausible facilitator verified and settled the payment" : `GoPlausible facilitator rejected the paid retry with HTTP ${response.status}`, data: { settlement, status: response.status, facilitator: process.env.FACILITATOR_URL, body: responseBody.slice(0, 1000), paymentResponseHeader: response.headers.get("payment-response") || response.headers.get("x-payment-response") } });
     if (!response.ok) throw new Error(`Paid request failed with HTTP ${response.status}: ${responseBody.slice(0, 500)}`);
 
-    const result = await response.json();
+    const result = await response.json() as {
+      resolution: { patch?: Array<{ path?: string; diff?: string }> };
+    };
     const transaction = settlement?.transaction ?? settlement?.txHash ?? null;
     emit({ type: "step", actor: "AGENT A -> AGENT B", title: "Paid retry accepted", detail: `POST ${selected.endpoint} returned HTTP ${response.status}`, data: { response: result, settlement, transaction, explorerUrl: transaction ? explorerUrl(transaction, useTestnet) : null, provider: selected.provider.walletAddress, network: settlement?.network || network.label } });
+    verificationStarted = true;
+    const verification = await verifyResolution(selectedFixture, result.resolution);
+    emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk`, data: { command: verification.command, changed: verification.changed.map((file) => file.path), patchApplied: true } });
     emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: "Structured patch returned", detail: "The paid capability returned the live incident-resolution response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -202,11 +282,11 @@ export async function runIncidentPaymentFlow(options: {
     emit({
       type: "error",
       actor: "THRESHOLD FLOW",
-      title: insufficientFunds ? "Payment failed: insufficient funds" : "Payment flow failed",
+      title: insufficientFunds ? "Payment failed: insufficient funds" : verificationStarted ? "Verification failed" : "Payment flow failed",
       detail,
       data: {
         error: message,
-        failureReason: insufficientFunds ? "insufficient-funds" : "payment-flow-error",
+        failureReason: insufficientFunds ? "insufficient-funds" : verificationStarted ? "verification-error" : "payment-flow-error",
         payer: payerAddress,
         network: paymentNetwork,
         asset: paymentAsset,
