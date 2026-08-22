@@ -339,6 +339,7 @@ export async function runIncidentPaymentFlow(options: {
       const verification = await verifyResolution(selectedFixture, result.resolution);
       const fileEvidence = verification.changed.map((file) => ({
         path: file.path,
+        content: file.content,
         sha256: createHash("sha256").update(file.content, "utf8").digest("hex"),
       }));
       emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk; verified ${fileEvidence.map((file) => `${file.path} (sha256:${file.sha256.slice(0, 12)}...)`).join(", ")}`, data: { command: verification.command, changed: fileEvidence, patchApplied: true } });

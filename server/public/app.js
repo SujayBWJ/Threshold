@@ -467,6 +467,12 @@ function addFlowEvent(event) {
       </div>
     </details>
   ` : "";
+  const appliedFileEvidence = event.data?.patchApplied && Array.isArray(event.data.changed) ? `
+    <details class="flow-payload-details verification-file-details">
+      <summary>View applied file on disk</summary>
+      ${event.data.changed.map((file) => `<div class="verification-file"><strong>${escapeHtml(file.path || "patched file")}</strong><code>sha256:${escapeHtml(file.sha256 || "unavailable")}</code><pre>${escapeHtml(file.content || "Content unavailable")}</pre></div>`).join("")}
+    </details>
+  ` : "";
   item.innerHTML = `
     <span class="sim-event-marker"></span>
     <div class="sim-event-body">
@@ -474,6 +480,7 @@ function addFlowEvent(event) {
       <strong>${escapeHtml(event.title)}</strong>
       <code>${escapeHtml(event.detail)}</code>
       ${event.data?.patchApplied && Array.isArray(event.data.changed) ? `<div class="verification-evidence">On-disk evidence: ${event.data.changed.map((file) => `${escapeHtml(file.path)} · sha256:${escapeHtml(file.sha256 || "unavailable")}`).join(" · ")}</div>` : ""}
+      ${appliedFileEvidence}
       ${payloadEvidence}
       ${fundingGuide}
     </div>
