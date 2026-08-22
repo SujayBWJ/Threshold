@@ -366,6 +366,23 @@ Get-FileHash "C:\path\printed-by-threshold\src\math.ts" -Algorithm SHA256
 
 The preserved directory is temporary verification evidence, not the user's project.
 
+### Railway
+
+Railway is recommended for the live submission because it keeps the Node service running
+without the free-tier sleep delay. The repository includes [`railway.json`](railway.json).
+
+1. Open Railway and choose **New Project** -> **Deploy from GitHub repo**.
+2. Select `SujayBWJ/Threshold` and deploy the `main` branch.
+3. Railway reads `railway.json`, installs the workspace with pnpm, and starts
+  `pnpm --dir server start`.
+4. Add the environment values from your local `.env` in the Railway Variables tab. Never
+  paste `.env` into GitHub or commit wallet mnemonics.
+5. Set `X402_NETWORK=testnet` for judging, then open the generated Railway domain.
+
+Required variables are `AVM_ADDRESS`, `FACILITATOR_URL`, `AVM_MNEMONIC`,
+`AVM_PAYER_ADDRESS`, `PROVIDER_CODE_REVIEW_ADDRESS`, `PROVIDER_SUMMARIZE_ADDRESS`,
+`GEMINI_API_KEY`, and optionally `PROVIDER_SECURITY_SCAN_ADDRESS`.
+
 ## Troubleshooting
 
 ### Gemini quota error
