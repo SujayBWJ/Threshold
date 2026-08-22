@@ -410,7 +410,7 @@ function saveIncidentActivity(events) {
   const settlement = events.find((event) => event.data?.settlement?.success);
   const cost = settlement ? 0.001 : 0;
   const item = {
-    incident: first?.data?.fixture?.id === "regional-cache" ? "Regional cache collision in src/cache/userLookup.ts" : "Divide failure in src/math.ts",
+    incident: first?.data?.fixture?.id === "regional-cache" ? "Regional cache collision in src/cache/userLookup.ts" : first?.data?.fixture?.id === "dependency-scan" ? "Dependency vulnerability scan for demo-xml-parser" : "Divide failure in src/math.ts",
     outcome: complete ? "resolved" : "failed",
     reason: complete ? "Structured patch returned" : error?.detail || "Payment flow failed",
     cost,
@@ -424,7 +424,7 @@ function saveIncidentActivity(events) {
 }
 
 function markCatalogSelection(apiId) {
-  document.querySelectorAll(".api-card").forEach((card) => {
+  document.querySelectorAll(".api-card, .public-api-item").forEach((card) => {
     const selected = card.dataset.apiId === apiId;
     card.classList.toggle("selected-for-run", selected);
     const badge = card.querySelector(".selection-badge");
@@ -451,10 +451,10 @@ function addFlowEvent(event) {
   const item = document.createElement("div");
   item.className = `sim-event ${event.type === "error" ? "error" : event.type === "complete" ? "complete" : "pending"}`;
   const errorData = event.type === "error" ? event.data || {} : null;
-  const payloadEvidence = event.title === "Incident detected" && event.data?.fixture ? `
+  const payloadEvidence = event.title === "Incident detected" && event.data?.requestBody ? `
     <details class="flow-payload-details">
       <summary>View incident payload sent to provider</summary>
-      <pre>${escapeHtml(JSON.stringify(event.data.fixture, null, 2))}</pre>
+      <pre>${escapeHtml(JSON.stringify(event.data.requestBody, null, 2))}</pre>
     </details>
   ` : "";
   const fundingGuide = errorData?.failureReason === "insufficient-funds" ? `
@@ -501,6 +501,17 @@ function updateSettlement(data) {
 }
 
 function renderFlowResult(data) {
+  const scan = data.response?.scan;
+  if (scan) {
+    const findings = Array.isArray(scan.findings) ? scan.findings : [];
+    agentResult.innerHTML = `
+      <div class="agent-result-header"><div><span class="section-kicker">Live security capability response</span><div class="agent-answer"><span class="answer-label">Dependency intelligence returned</span><p>${findings.length ? `${findings.length} vulnerability finding${findings.length === 1 ? "" : "s"} matched the pinned dependencies.` : "No vulnerability findings matched."}</p></div></div><strong class="accent-text">${escapeHtml(scan.clean ? "CLEAN" : "ACTION REQUIRED")}</strong></div>
+      <div class="patch-output">${findings.map((finding) => `<div class="patch-file"><span>${escapeHtml(finding.package || "dependency")}</span><pre>${escapeHtml(`${finding.vulnerability || "Finding"}\nRecommended version: ${finding.recommendedVersion || "See provider result"}`)}</pre></div>`).join("") || "<p>No findings returned.</p>"}</div>
+      <div class="agent-trace"><div class="trace-step"><span class="trace-index">01</span><div><strong>External lookup</strong><span>Current security feed queried</span></div></div><div class="trace-step"><span class="trace-index">02</span><div><strong>Dependencies scanned</strong><span>${escapeHtml(String(data.response?.scan?.scannedDependencies ?? 0))}</span></div></div><div class="trace-step"><span class="trace-index">03</span><div><strong>Settlement</strong><span>${escapeHtml(data.transaction || "Facilitator response returned")}</span></div></div></div>
+    `;
+    agentResult.classList.remove("hidden");
+    return;
+  }
   const result = data.response?.resolution;
   if (!result) return;
   const patch = Array.isArray(result.patch) ? result.patch : [];
@@ -684,6 +695,7 @@ async function fetchCatalog() {
     items.forEach((api) => {
       const card = document.createElement("article");
       card.className = "public-api-item";
+      card.dataset.apiId = api.id;
       card.innerHTML = `<div><span class="public-api-kind">${escapeHtml(api.category)}</span><h3>${escapeHtml(api.name)}</h3><p>${escapeHtml(api.description)}</p></div><span class="public-api-price">${escapeHtml(api.price)} ${escapeHtml(api.currency)} / request</span>`;
       catalogGrid.appendChild(card);
     });
@@ -706,7 +718,7 @@ document.querySelectorAll(".bug-option").forEach((button) => button.addEventList
   selectedBug = button.dataset.bug || "divide";
   document.querySelectorAll(".bug-option").forEach((option) => option.classList.toggle("is-selected", option === button));
   const label = document.getElementById("incident-label");
-  if (label) label.innerHTML = selectedBug === "regional-cache" ? "Regional lookup failure in <code>src/cache/userLookup.ts</code>" : "Divide failure in <code>src/math.ts</code>";
+  if (label) label.innerHTML = selectedBug === "regional-cache" ? "Regional lookup failure in <code>src/cache/userLookup.ts</code>" : selectedBug === "dependency-scan" ? "Dependency risk in <code>package.json</code>" : "Divide failure in <code>src/math.ts</code>";
 }));
 siteNav?.addEventListener("click", (event) => {
   const link = event.target.closest("a[href^='#']");

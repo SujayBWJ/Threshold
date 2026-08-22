@@ -4,14 +4,14 @@
 
 Threshold is a small marketplace for AI capabilities that software agents can use when they get stuck.
 
-Imagine an automated build agent running tests. It finds a bug, but it does not know how to fix it. Instead of having a human search for a service, Threshold lets the agent:
+Imagine an automated build agent reaching a capability boundary. Instead of having a human search for a service, Threshold lets the agent:
 
 1. Describe the problem.
 2. Look through a catalog of available capabilities.
 3. Choose the service that matches the problem.
 4. Pay for one request with a tiny USDC payment.
 5. Send the bug and code to the paid provider.
-6. Receive a structured diagnosis and code patch.
+6. Receive a structured diagnosis, code patch, or dependency security finding.
 
 The important idea is that the agent does not only ask an AI model for an answer. It discovers and pays for a separate capability through a real machine-to-machine payment flow.
 
@@ -29,22 +29,22 @@ Threshold is a prototype of that missing layer.
 
 ## A simple story
 
-Agent A is a build runner. It detects this real-looking production bug:
+Agent A is a build runner. It can detect a logic bug, a regional cache-isolation bug, or a dependency risk that requires current external security data:
 
-- A profile cache stores data using only `userId`.
-- The same user ID can exist in multiple tenants.
-- A request from `acme-us` fills the cache.
-- A later request from `acme-eu` gets the US profile by mistake.
-- That is a tenant-isolation and data-leak risk.
+- A regional user cache stores data using only `userId`.
+- The same user ID can exist in more than one region.
+- A request from `us-east` fills the cache.
+- A later request from `eu-west` gets the US user by mistake.
+- That is a region-isolation and data-leak risk.
 
 Agent A cannot safely fix the issue itself. It asks Threshold for help. Threshold discovers the incident-resolution capability, pays the provider, and gets this kind of patch back:
 
 ```diff
---- a/src/profile-cache.ts
-+++ b/src/profile-cache.ts
+--- a/src/cache/userLookup.ts
++++ b/src/cache/userLookup.ts
 @@
 -  const key = userId;
-+  const key = `${tenantId}:${userId}`;
++  const key = `${region}:${userId}`;
 ```
 
 The change is small, but the problem is realistic: cache keys must include every piece of identity that affects the data.
@@ -166,7 +166,7 @@ The response is Server-Sent Events, commonly called SSE. SSE is a long-lived HTT
 
 ### 2. Agent A reports the incident
 
-The first event contains the real incident fixture: the tenant cache bug, affected files, error message, and constraints.
+The first event contains the real selected scenario and the literal request body sent to the provider. Bug scenarios include affected files, test data, error message, and constraints; the dependency scan includes its pinned dependency manifest.
 
 ### 3. Agent A queries the catalog
 
@@ -317,7 +317,7 @@ unpaid request -> HTTP 402 -> signed payment -> facilitator settlement -> HTTP 2
 
 ## How to explain the project in 60 seconds
 
-“Threshold is a payment and discovery layer for software agents. When an agent cannot fix an incident, it queries a catalog of capabilities instead of relying on a human to find the right service. In our demo it selects an incident-resolution provider for a real tenant-isolation cache bug. The protected endpoint first returns HTTP 402. The server-side x402 client signs a 1000 micro-USDC payment on Algorand TestNet, GoPlausible verifies and settles it, and the request is retried with payment proof. The provider returns a structured diagnosis and unified diff. The browser shows the real event stream, settlement data, transaction ID, and Lora link. An underfunded-wallet toggle demonstrates the real failure path.”
+“Threshold is a payment and discovery layer for software agents. When an agent reaches a capability boundary, it queries a catalog instead of relying on a human to find the right service. In our demo it selects incident resolution for a divide or regional-cache bug, or dependency vulnerability intelligence when current external data is required. The protected endpoint first returns HTTP 402. The server-side x402 client signs a micro-USDC payment on Algorand TestNet, GoPlausible verifies and settles it, and the request is retried with payment proof. The provider returns a structured diagnosis, diff, or security finding. The browser shows the real event stream, settlement data, transaction ID, and Lora link. An underfunded-wallet toggle demonstrates the real failure path.”
 
 ## Questions judges may ask
 
@@ -337,9 +337,9 @@ The judging path is Algorand TestNet, so it uses test USDC rather than real mone
 
 The facilitator returns a settlement response containing `success: true` and a transaction ID. That ID is shown in the UI and opens on Algorand Lora, where the asset transfer can be independently inspected.
 
-### What stops one tenant from seeing another tenant’s profile?
+### What stops one region from returning another region’s user?
 
-The incident demonstrates the bug and the fix: the cache key must include both tenant ID and user ID. The provider returns a patch changing `userId` to `${tenantId}:${userId}`.
+The regional-cache fixture demonstrates the bug and fix: the cache key must include both region and user ID. The provider returns a patch changing `userId` to `${region}:${userId}`.
 
 ### What happens if payment fails?
 
@@ -347,7 +347,7 @@ The same flow emits an error event and records a failed incident. The underfunde
 
 ### Is capability selection hardcoded?
 
-The flow fetches the catalog, searches capabilities, selects the entry matching `bug-resolution`, and reports alternatives. The catalog contains incident resolution, code review, and summarization.
+The flow fetches the catalog, searches for the capability matching the selected scenario, and reports alternatives. The catalog contains incident resolution, code review, summarization, and dependency vulnerability intelligence.
 
 ### What is the strongest limitation?
 

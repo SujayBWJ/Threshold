@@ -1,0 +1,7 @@
+{
+  "name": "threshold-dependency-scan-fixture",
+  "private": true,
+  "dependencies": {
+    "demo-xml-parser": "1.4.0"
+  }
+}

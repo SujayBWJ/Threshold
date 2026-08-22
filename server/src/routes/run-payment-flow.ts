@@ -18,7 +18,7 @@ runPaymentFlowRouter.post("/", async (c) => {
   const options = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
   const useTestnet = options.network === "testnet";
   const emptyWallet = options.wallet === "empty";
-  const bugId = options.bug === "regional-cache" ? "regional-cache" : "divide";
+  const bugId = options.bug === "regional-cache" || options.bug === "dependency-scan" ? options.bug : "divide";
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {

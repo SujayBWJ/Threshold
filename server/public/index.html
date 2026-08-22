@@ -92,19 +92,19 @@
               <div>
                 <p class="section-kicker">Live payment trace</p>
                 <h2 id="agent-title">Two agents. One blocked task.</h2>
-                <p class="agent-copy">Agent A cannot fix a failing test. It discovers Threshold, receives x402 terms, signs a $0.001 USDC payment, and consumes a debugging capability from Agent B.</p>
+                <p class="agent-copy">Agent A reaches a capability boundary. It discovers Threshold, receives x402 terms, settles a small USDC payment, and consumes specialized debugging or security intelligence from Agent B.</p>
               </div>
               <div class="agent-signal"><span></span> TestNet selected</div>
             </div>
 
             <div class="machine-topology" aria-label="Machine interaction topology">
-              <div class="machine-node"><span class="node-kicker">CALLER / AGENT A</span><strong>Build Runner</strong><code>needs: bug-resolution</code></div>
+              <div class="machine-node"><span class="node-kicker">CALLER / AGENT A</span><strong>Build Runner</strong><code>needs: external-capability</code></div>
               <div class="topology-wire"><span>HTTP + x402</span><i data-lucide="arrow-right-left"></i></div>
-              <div class="machine-node provider-node"><span class="node-kicker">PROVIDER / AGENT B</span><strong>Threshold Debug Labs</strong><code>POST /api/resolve-incident</code></div>
+              <div class="machine-node provider-node"><span class="node-kicker">PROVIDER / AGENT B</span><strong>Threshold Capability Labs</strong><code>POST /api/resolve-incident</code></div>
             </div>
 
             <div class="simulator-toolbar">
-                <div><span class="section-kicker">Incident input</span><strong id="incident-label">Divide failure in <code>src/math.ts</code></strong><small>Choose one real fixture, then let the agent discover, pay, and resolve it.</small></div>
+                <div><span class="section-kicker">Capability input</span><strong id="incident-label">Divide failure in <code>src/math.ts</code></strong><small>Choose a real scenario, then let the agent discover, pay, and consume the result.</small></div>
               <div class="flow-options">
                 <label class="toggle-control"><input id="network-toggle" type="checkbox" checked /> <span class="toggle-track" aria-hidden="true"></span><span>Use TestNet</span></label>
                 <label class="toggle-control"><input id="empty-wallet-toggle" type="checkbox" /> <span class="toggle-track" aria-hidden="true"></span><span>Underfunded wallet</span></label>
@@ -113,6 +113,7 @@
                 <span class="bug-picker-label">Run fixture</span>
                 <button class="bug-option is-selected" type="button" data-bug="divide">Divide bug</button>
                 <button class="bug-option" type="button" data-bug="regional-cache">Regional cache bug</button>
+                <button class="bug-option" type="button" data-bug="dependency-scan">Dependency vulnerability scan</button>
               </div>
               <button id="run-payment-flow" class="agent-submit" type="button"><span>Run autonomous task</span><i data-lucide="play" class="h-4 w-4"></i></button>
             </div>

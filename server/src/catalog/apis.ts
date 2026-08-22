@@ -81,6 +81,22 @@ export function getApiCatalog(): ApiCatalogEntry[] {
         walletAddress: requireProviderAddress("PROVIDER_SUMMARIZE_ADDRESS"),
       },
     },
+    {
+      id: "dependency-vulnerability-scan",
+      name: "Dependency Vulnerability Scan",
+      description: "Checks pinned dependencies against a current security feed",
+      method: "POST",
+      endpoint: "/api/scan-dependencies",
+      price: "$0.002",
+      currency: PAYMENT_CURRENCY,
+      network: PAYMENT_NETWORK_LABEL,
+      category: "security-intelligence",
+      capabilities: ["dependency-vulnerability-scan", "security-intelligence", "cve-lookup"],
+      provider: {
+        name: "Threshold Security Feed",
+        walletAddress: process.env.PROVIDER_SECURITY_SCAN_ADDRESS?.trim() || requireProviderAddress("PROVIDER_CODE_REVIEW_ADDRESS"),
+      },
+    },
   ];
 }
 

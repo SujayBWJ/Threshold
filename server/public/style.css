@@ -398,9 +398,10 @@ body {
   padding: 0.8rem 0;
 }
 
-.api-card.selected-for-run {
-  border-color: rgba(251, 146, 60, 0.8);
-  box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.25);
+.api-card.selected-for-run,
+.public-api-item.selected-for-run {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
 }
 
 .selection-badge {

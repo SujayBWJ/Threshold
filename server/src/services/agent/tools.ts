@@ -1,6 +1,6 @@
 export const thresholdTool = {
   name: "threshold.resolveIncident",
-  description: "Discover and pay for a debugging capability that returns a structured patch for a failing test.",
+  description: "Discover and pay for a debugging or security capability that returns a structured patch or current dependency finding.",
   input: {
     runtime: "string",
     language: "string",

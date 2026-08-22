@@ -11,7 +11,7 @@ Use this report together with the source code. When this report and the code dis
 - Project: Threshold
 - Repository: `https://github.com/SujayBWJ/Threshold`
 - Primary branch: `main`
-- Latest implementation work at the time of this report: live payment flow, Lora links, judging evidence, tenant-isolation incident fixture, incident ledger, and capability-selection UI.
+- Latest implementation work at the time of this report: live payment flow, Lora links, judging evidence, selectable incident fixtures, dependency security scan, sandbox verification, incident ledger, and capability-selection UI.
 - Runtime: Node.js with TypeScript executed through `tsx`.
 - Server framework: Hono with `@hono/node-server`.
 - Frontend: static HTML, CSS, and browser JavaScript served by the same server.
@@ -20,14 +20,16 @@ Use this report together with the source code. When this report and the code dis
 
 Threshold is an agent-oriented capability gateway. A caller agent has a task it cannot complete. Threshold lets it inspect a catalog of capabilities, select a matching provider, pay for one request through x402 on Algorand, forward the incident to the protected provider route, and return a structured result.
 
-The primary demo is incident resolution. It demonstrates a realistic tenant-isolation cache bug:
+The primary demo is a paid capability flow. It demonstrates two real logic incidents plus a dependency security lookup:
 
-- The profile cache key uses only `userId`.
-- The same user identifier can exist under more than one tenant.
-- A profile cached for `acme-us` can be returned for `acme-eu`.
-- The correct fix is to include both tenant ID and user ID in the cache key.
+- The divide fixture returns multiplication instead of division.
+- The regional user cache key uses only `userId`.
+- The same user identifier can exist under more than one region.
+- A user cached for `us-east` can be returned for `eu-west`.
+- The correct fix is to include region and user ID in the cache key.
+- The dependency fixture has passing logic tests but a pinned version matched by an OSV-compatible mock security feed.
 
-The provider response is expected to contain a diagnosis, confidence value, unified diff, and verification command. The browser displays the returned diff. The demo does not currently apply that patch to a real repository or execute the returned verification command locally.
+The provider response contains either a diagnosis, confidence value, unified diff, and verification command, or a structured dependency finding. Bug patches are applied in a temporary verification workspace and tested there; the demo does not modify the user's real repository.
 
 ## What the project is and is not
 
@@ -402,7 +404,7 @@ pnpm test:pay:summarize
 
 `pnpm typecheck` should exit successfully.
 
-`pnpm test` runs the focused Node test file and should report three passing tests: Lora URL generation for TestNet/MainNet and tenant-isolation fixture consistency.
+`pnpm test` runs the focused Node test file and verifies Lora URL generation, fixture consistency, sandbox patch application, and dependency-feed detection.
 
 `pnpm test:pay` should show:
 
@@ -422,14 +424,14 @@ Verified behavior:
 - TypeScript typecheck passes.
 - Focused automated tests pass.
 - Direct TestNet x402 smoke test has produced HTTP 402 followed by HTTP 200 and `Settlement success: true`.
-- Incident flow has produced a real GoPlausible settlement and a structured tenant-isolation patch.
+- Incident flow has produced a real GoPlausible settlement and structured results for its selectable scenarios.
 - Transaction URLs use the required Lora TestNet format.
 - Browser flow uses SSE and renders backend events.
 - Underfunded wallet emits an error event.
 
 Known limitations:
 
-- The browser does not apply the returned patch or execute its verification command.
+- Patches are verified in a temporary workspace, not applied to the user's real repository.
 - AI response correctness is validated structurally, not formally proven.
 - The payer is server-controlled for the prototype.
 - Incident ledger is localStorage, not durable server storage.
@@ -451,12 +453,12 @@ When another agent uses this report, follow these rules:
 8. If changing the incident fixture, update the fixture consistency test and visible UI copy together.
 9. If changing network or asset logic, run `pnpm typecheck`, `pnpm test`, and a real payment smoke test.
 10. If changing SSE or browser event handling, test both funded and underfunded runs.
-11. Distinguish “patch returned” from “patch applied and verified.” The current project only proves the former.
+11. Distinguish “patch returned” from “patch applied and verified.” Bug patches are applied and tested in a temporary verification workspace; the user's real repository is not modified.
 12. Before making claims, state which command, response, or explorer page provides evidence.
 
 ## Judge-facing explanation
 
-Threshold is an agent capability marketplace. A build agent that cannot solve an incident queries the catalog, selects a debugging capability, receives a real HTTP 402 price requirement, signs a small USDC payment with the server-side Algorand payer, sends it through the GoPlausible facilitator, retries with payment proof, and receives a structured patch. The browser shows the real SSE event stream and the actual settlement transaction. The current incident demonstrates a tenant-isolation cache vulnerability where a composite tenant-plus-user cache key prevents cross-tenant profile leakage.
+Threshold is an agent capability marketplace. A build agent that reaches a capability boundary queries the catalog, selects incident resolution or dependency vulnerability intelligence, receives a real HTTP 402 price requirement, signs a small USDC payment with the server-side Algorand payer, sends it through the GoPlausible facilitator, retries with payment proof, and receives a structured patch or security finding. The browser shows the real SSE event stream and settlement transaction. Bug patches are applied and verified in a temporary workspace; security scans use a clearly labeled OSV-compatible mock feed.
 
 ## Final summary
 

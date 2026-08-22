@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { explorerUrl, incidentFixtures, verifyResolution } from "../src/services/payment/incident-flow.js";
+import { scanDependencies } from "../src/services/security/dependency-scan.js";
 
 test("builds the required Lora TestNet transaction URL", () => {
   const transaction = "ABC123+/=";
@@ -49,4 +50,16 @@ test("provider patch is applied on disk before the fixture test runs", async () 
 
   assert.equal(result.command, "pnpm exec tsx --test src/math.test.ts");
   assert.deepEqual(result.changed.map((file) => file.path), ["src/math.ts"]);
+});
+
+test("dependency scan finds current feed data that passing tests cannot detect", () => {
+  const result = scanDependencies(incidentFixtures["dependency-scan"].dependencies ? {
+    dependencies: incidentFixtures["dependency-scan"].dependencies,
+    lockfileVersion: 3,
+  } : { dependencies: {} });
+
+  assert.equal(result.clean, false);
+  assert.equal(result.findings[0]?.package, "demo-xml-parser");
+  assert.equal(result.findings[0]?.recommendedVersion, "1.4.1");
+  assert.match(result.findings[0]?.vulnerability || "", /THRESHOLD-DEMO/);
 });

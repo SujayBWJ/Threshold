@@ -12,6 +12,7 @@ import { summarizePaidRouter } from "./src/routes/summarize-paid.js";
 import { catalogRouter } from "./src/routes/catalog.js";
 import { agentRouter } from "./src/routes/agent.js";
 import { resolveIncidentRouter } from "./src/routes/resolve-incident.js";
+import { scanDependenciesRouter } from "./src/routes/scan-dependencies.js";
 import {
   getBasePaymentRequirement,
   getPaymentPrice,
@@ -53,6 +54,7 @@ function requireEnv(name: string): string {
 const avmAddress = requireEnv("AVM_ADDRESS");
 const providerCodeReviewAddress = requireEnv("PROVIDER_CODE_REVIEW_ADDRESS");
 const providerSummarizeAddress = requireEnv("PROVIDER_SUMMARIZE_ADDRESS");
+const providerSecurityScanAddress = process.env.PROVIDER_SECURITY_SCAN_ADDRESS?.trim() || providerCodeReviewAddress;
 const facilitatorUrl = requireEnv("FACILITATOR_URL");
 const price = getPaymentPrice();
 const port = Number(process.env.PORT) || 4021;
@@ -67,6 +69,7 @@ if (!isValidAlgorandAddress(avmAddress)) {
 for (const [label, address] of [
   ["PROVIDER_CODE_REVIEW_ADDRESS", providerCodeReviewAddress],
   ["PROVIDER_SUMMARIZE_ADDRESS", providerSummarizeAddress],
+  ["PROVIDER_SECURITY_SCAN_ADDRESS", providerSecurityScanAddress],
 ] as const) {
   if (!isValidAlgorandAddress(address)) {
     console.error(`Invalid ${label}: must be a valid Algorand public address.`);
@@ -228,6 +231,21 @@ const incidentDiscovery = declareHttpDiscovery({
   },
 });
 
+const dependencyScanDiscovery = declareHttpDiscovery({
+  method: "POST",
+  bodyType: "json",
+  input: { dependencies: { "package-name": "version" }, lockfileVersion: "number" },
+  output: {
+    example: {
+      project: "Threshold",
+      api: "Dependency Vulnerability Scan",
+      endpoint: "/api/scan-dependencies",
+      description: "Checks pinned dependencies against a current security feed",
+      output: { success: true, scan: { findings: [], clean: true } },
+    },
+  },
+});
+
 const app = new Hono();
 
 app.use("/*", serveStatic({ root: "./public" }));
@@ -263,6 +281,12 @@ app.use(
         mimeType: "application/json",
         extensions: incidentDiscovery,
       },
+      "POST /api/scan-dependencies": {
+        accepts: [getBasePaymentRequirement("$0.002", providerSecurityScanAddress)],
+        description: "Threshold dependency vulnerability intelligence endpoint",
+        mimeType: "application/json",
+        extensions: dependencyScanDiscovery,
+      },
     },
     server,
   ),
@@ -274,6 +298,7 @@ app.route("/api/code-review/paid", codeReviewPaidRouter);
 app.route("/api/summarize", summarizeRouter);
 app.route("/api/summarize/paid", summarizePaidRouter);
 app.route("/api/resolve-incident", resolveIncidentRouter);
+app.route("/api/scan-dependencies", scanDependenciesRouter);
 
 serve(
   {

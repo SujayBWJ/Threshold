@@ -14,8 +14,9 @@ A user describes an outcome instead of choosing a provider or learning an endpoi
 - AI code review
 - Composed code review followed by summarization
 - A login-free local Agent Profile console with usage history
-- A live incident-resolution flow with selectable divide and regional-cache fixtures
+- A live capability flow with selectable divide, regional-cache, and dependency-scan scenarios
 - Structured patch display, sandbox application, and real test verification
+- A repeatable liveness proof for three settlements and the underfunded-wallet failure path
 
 The current demo uses a controlled TestNet payer wallet on the server. This is suitable for a prototype and should be replaced by user- or agent-authorized spending before production use.
 
@@ -50,14 +51,14 @@ An incident-resolution request follows this path:
 Failing fixture and source files
   -> Agent A tool registration
   -> GET /api/catalog
-  -> Bug-resolution capability selected
+  -> Matching capability selected
   -> Unpaid POST /api/resolve-incident
   -> HTTP 402 payment terms
   -> x402 USDC signing and facilitator settlement
   -> Paid retry with the same incident payload
-  -> Structured diagnosis and unified diff
-  -> Temporary workspace patch application
-  -> Real fixture test verification
+  -> Structured diagnosis, unified diff, or security finding
+  -> Temporary workspace patch application when a patch is returned
+  -> Real fixture test verification or security-feed result
 ```
 
 ## Features
@@ -70,7 +71,7 @@ The main workspace supports three modes:
 - **Review code**: inspect code for bugs, security concerns, correctness, and maintainability
 - **Review + summarize**: pay for both capabilities and turn the detailed review into a concise explanation
 
-The incident workspace also lets the user select the divide or regional-cache fixture, choose TestNet or MainNet, and trigger an underfunded-wallet failure. Each run returns a live SSE trace containing the selected capability, exact incident payload, payment status, transaction ID, patch, and verification result.
+The incident workspace lets the user select the divide bug, regional-cache bug, or dependency vulnerability scan, choose TestNet or MainNet, and trigger an underfunded-wallet failure. Each run returns a live SSE trace containing the selected capability, exact transmitted payload, payment status, transaction ID, and structured result.
 
 ### Public Catalog
 
@@ -122,6 +123,7 @@ flowchart TD
 - `server/src/services/payment/summarize.ts`: x402 payer and summarizer relay
 - `server/src/services/payment/code-review.ts`: x402 payer and code-review relay
 - `server/src/services/payment/incident-flow.ts`: incident fixtures, x402 payment flow, patch application, and sandbox verification
+- `server/src/services/security/dependency-scan.ts`: current security-feed fixture lookup for pinned dependencies
 - `server/src/services/agent/tools.ts`: explicit `threshold.resolveIncident` tool registration metadata
 - `server/src/services/ai/gemini.ts`: Gemini prompts, response parsing, and provider error handling
 - `server/public/index.html`: application shell and Agent Profile sections
@@ -186,6 +188,7 @@ GET  /api/test
 POST /api/code-review
 POST /api/summarize
 POST /api/resolve-incident
+POST /api/scan-dependencies
 ```
 
 The browser incident trace is streamed by:
@@ -194,7 +197,7 @@ The browser incident trace is streamed by:
 POST /api/agent/run-payment-flow
 ```
 
-It accepts `network` (`testnet` or `mainnet`), `wallet` (`funded` or `empty`), and `bug` (`divide` or `regional-cache`).
+It accepts `network` (`testnet` or `mainnet`), `wallet` (`funded` or `empty`), and `bug` (`divide`, `regional-cache`, or `dependency-scan`).
 
 The demo relays are:
 
@@ -236,6 +239,7 @@ AVM_MNEMONIC=<testnet payer mnemonic>
 AVM_PAYER_ADDRESS=<address derived from AVM_MNEMONIC>
 PROVIDER_CODE_REVIEW_ADDRESS=<provider receiver address>
 PROVIDER_SUMMARIZE_ADDRESS=<provider receiver address>
+PROVIDER_SECURITY_SCAN_ADDRESS=<optional security-scan receiver address; defaults to code-review provider>
 GEMINI_API_KEY=<gemini api key>
 GEMINI_MODEL=gemini-3.5-flash
 X402_PRICE="$0.001"
@@ -285,6 +289,18 @@ pnpm --dir server run test:pay:code-review
 
 These tests verify the complete 402 -> sign -> settle -> retry flow against the local protected routes.
 
+Run the live proof command with the server already running and a funded TestNet payer:
+
+```bash
+pnpm --dir server run test:verify-liveness
+```
+
+It performs three sequential funded flows, asserts unique settlement transaction IDs and
+timestamps, confirms payer/provider wallet fields are present and stable, then runs the
+empty-wallet flow and requires the `Payment failed: insufficient funds` SSE event. The
+funded payer is expected to stay stable; a changing payer would indicate an authorization
+or wallet-identity problem, not liveness.
+
 ## Payment Flow
 
 1. A request reaches a protected provider route.
@@ -296,7 +312,8 @@ These tests verify the complete 402 -> sign -> settle -> retry flow against the 
 7. The provider route calls Gemini.
 8. Threshold returns the AI result and settlement transaction metadata.
 
-The default demo price is `$0.001 USDC` per provider request. The composed review-plus-summary flow costs `$0.002 USDC`.
+The incident-resolution price is `$0.001 USDC` per request. The dependency vulnerability
+scan and composed review-plus-summary flow cost `$0.002 USDC`.
 
 For hackathon judging, keep `X402_NETWORK=testnet`. A successful run produces a fresh
 Algorand TestNet transaction and links it to:
@@ -309,12 +326,14 @@ The live trace also identifies the configured GoPlausible facilitator and expose
 catalog selection reason plus rejected alternative capabilities. The underfunded-wallet
 toggle exercises the same SSE flow and emits a real payment failure event.
 
-The incident flow sends the full fixture as JSON, including the failing source files,
-test file, error name/message/stack, runtime, language, and constraints. After payment,
-the provider's returned unified diff is applied with `git apply` inside a temporary
+The incident flow sends the literal request body as JSON. Bug scenarios include source
+files, test files, error name/message/stack, runtime, language, and constraints. The
+dependency scenario sends its pinned dependency manifest to `/api/scan-dependencies`.
+After payment, a returned unified diff is applied with `git apply` inside a temporary
 verification workspace. The selected fixture test runs against the modified file, and
-the flow emits `Verification passed` only when that test succeeds. This sandbox keeps
-the demo honest without modifying the repository running the server.
+the flow emits `Verification passed` only when that test succeeds. Security scans instead
+return a structured finding from a clearly labeled OSV-compatible mock feed. This sandbox
+keeps the demo honest without modifying the repository running the server.
 
 ## Troubleshooting
 
@@ -350,7 +369,7 @@ Stop the process using port `4021`, or set another `PORT` in `.env` and restart 
 
 ## Current Scope
 
-Threshold is intentionally focused on proving the agent marketplace loop with three capabilities: incident resolution, code review, and summarization. The incident demo includes two independently selectable fixtures: an arithmetic defect in `src/math.ts` and a regional cache-key isolation defect in `src/cache/userLookup.ts`. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and applying approved patches in a user's actual workspace.
+Threshold is intentionally focused on proving the agent capability loop with incident resolution, code review, summarization, and dependency vulnerability intelligence. The incident demo includes three independently selectable scenarios: an arithmetic defect in `src/math.ts`, a regional cache-key isolation defect in `src/cache/userLookup.ts`, and a pinned dependency matched against a clearly labeled OSV-compatible security-feed fixture. Patch verification happens in a temporary workspace; the current server does not modify the user's actual project. The next production-oriented steps would be durable server-side activity records, wallet or OAuth identity, user-configurable spending limits, provider quality signals, and applying approved patches in a user's actual workspace.
 
 
 ## Screenshots

@@ -42,7 +42,7 @@ type Settlement = {
   [key: string]: unknown;
 };
 
-export type IncidentBugId = "divide" | "regional-cache";
+export type IncidentBugId = "divide" | "regional-cache" | "dependency-scan";
 
 export const incidentFixtures: Record<IncidentBugId, {
   id: IncidentBugId;
@@ -51,6 +51,7 @@ export const incidentFixtures: Record<IncidentBugId, {
   language: string;
   error: { name: string; message: string; stack: string };
   files: Array<{ path: string; content: string }>;
+  dependencies?: Record<string, string>;
   constraints: Record<string, unknown>;
 }> = {
   divide: {
@@ -76,6 +77,19 @@ export const incidentFixtures: Record<IncidentBugId, {
       { path: "src/cache/userLookup.test.ts", content: "import { findUser } from './userLookup';\n\ntest('does not share users between regions', async () => {\n  const us = await findUser('user-42', 'us-east', async () => ({ id: 'user-42', region: 'us-east', name: 'US user' }));\n  const eu = await findUser('user-42', 'eu-west', async () => ({ id: 'user-42', region: 'eu-west', name: 'EU user' }));\n  expect(us.region).toBe('us-east');\n  expect(eu.region).toBe('eu-west');\n});" },
     ],
     constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1, security_sensitive: true },
+  },
+  "dependency-scan": {
+    id: "dependency-scan",
+    label: "Dependency vulnerability scan",
+    runtime: "node 22 / security-feed-client",
+    language: "json",
+    error: { name: "DependencySecurityCheckRequired", message: "All tests pass, but dependency freshness is unknown", stack: "at package.json:1:1" },
+    files: [
+      { path: "package.json", content: "{\n  \"dependencies\": {\n    \"demo-xml-parser\": \"1.4.0\"\n  }\n}" },
+      { path: "README.md", content: "# Fixture project\n\nRuntime behavior is covered by passing tests.\n" },
+    ],
+    dependencies: { "demo-xml-parser": "1.4.0" },
+    constraints: { must_return_scan: true, query_external_security_feed: true, return_recommended_version: true },
   },
 };
 
@@ -114,9 +128,10 @@ async function signerFromMnemonic(mnemonic: string) {
   return toClientAvmSigner(secretKey);
 }
 
-function selectedCapability(catalog: ApiCatalogEntry[]) {
-  const selected = catalog.find((entry) => entry.capabilities.includes("bug-resolution"));
-  if (!selected) throw new Error("Catalog has no bug-resolution capability");
+function selectedCapability(catalog: ApiCatalogEntry[], bugId: IncidentBugId) {
+  const capability = bugId === "dependency-scan" ? "dependency-vulnerability-scan" : "bug-resolution";
+  const selected = catalog.find((entry) => entry.capabilities.includes(capability));
+  if (!selected) throw new Error(`Catalog has no ${capability} capability`);
   return selected;
 }
 
@@ -205,24 +220,30 @@ export async function runIncidentPaymentFlow(options: {
   let paymentAsset: string | undefined;
   let paymentAmount: string | undefined;
   const selectedFixture = incidentFixtures[options.bugId ?? "divide"];
+  const requestBody = selectedFixture.id === "dependency-scan"
+    ? { dependencies: selectedFixture.dependencies, lockfileVersion: 3 }
+    : selectedFixture;
   let verificationStarted = false;
 
   try {
-    emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${selectedFixture.error.name}: ${selectedFixture.error.message}`, data: { fixture: selectedFixture } });
+    emit({ type: "step", actor: "AGENT A", title: "Incident detected", detail: `${selectedFixture.error.name}: ${selectedFixture.error.message}`, data: { fixture: selectedFixture, requestBody } });
     emit({ type: "step", actor: "AGENT A / TOOL REGISTRY", title: "Threshold tool available", detail: `${thresholdTool.name}: ${thresholdTool.description}`, data: { tool: thresholdTool } });
 
     const catalogResponse = await fetch(`${baseUrl}/api/catalog`);
     if (!catalogResponse.ok) throw new Error(`Catalog request failed (${catalogResponse.status})`);
     const catalogBody = (await catalogResponse.json()) as { apis?: ApiCatalogEntry[] };
     const catalog = catalogBody.apis ?? [];
-    const selected = selectedCapability(catalog);
+    const selected = selectedCapability(catalog, selectedFixture.id);
     const alternatives = catalog.filter((entry) => entry.id !== selected.id).map((entry) => entry.id);
-    emit({ type: "step", actor: "AGENT A -> CATALOG", title: "Capability selected", detail: `GET /api/catalog -> ${selected.id} matches bug-resolution; alternatives rejected: ${alternatives.join(", ")}`, data: { selected, alternatives, selectionReason: "The incident requires debugging and patch generation, not code review or summarization." } });
+    const selectionReason = selectedFixture.id === "dependency-scan"
+      ? "The project has no failing logic test; current vulnerability intelligence requires a security-feed lookup."
+      : "The incident requires debugging and patch generation, not code review, summarization, or dependency intelligence.";
+    emit({ type: "step", actor: "AGENT A -> CATALOG", title: "Capability selected", detail: `GET /api/catalog -> ${selected.id} matches ${selectedFixture.id === "dependency-scan" ? "dependency-vulnerability-scan" : "bug-resolution"}; alternatives rejected: ${alternatives.join(", ")}`, data: { selected, alternatives, selectionReason } });
 
     const request = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(selectedFixture),
+      body: JSON.stringify(requestBody),
     };
     const endpoint = `${baseUrl}${selected.endpoint}`;
     const unpaid = await fetch(endpoint, request);
@@ -265,14 +286,20 @@ export async function runIncidentPaymentFlow(options: {
     if (!response.ok) throw new Error(`Paid request failed with HTTP ${response.status}: ${responseBody.slice(0, 500)}`);
 
     const result = await response.json() as {
-      resolution: { patch?: Array<{ path?: string; diff?: string }> };
+      resolution?: { patch?: Array<{ path?: string; diff?: string }> };
+      scan?: { findings?: Array<{ package?: string; vulnerability?: string; recommendedVersion?: string }>; clean?: boolean; generatedAt?: string };
     };
     const transaction = settlement?.transaction ?? settlement?.txHash ?? null;
     emit({ type: "step", actor: "AGENT A -> AGENT B", title: "Paid retry accepted", detail: `POST ${selected.endpoint} returned HTTP ${response.status}`, data: { response: result, settlement, transaction, explorerUrl: transaction ? explorerUrl(transaction, useTestnet) : null, provider: selected.provider.walletAddress, network: settlement?.network || network.label } });
-    verificationStarted = true;
-    const verification = await verifyResolution(selectedFixture, result.resolution);
-    emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk`, data: { command: verification.command, changed: verification.changed.map((file) => file.path), patchApplied: true } });
-    emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: "Structured patch returned", detail: "The paid capability returned the live incident-resolution response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
+    if (selectedFixture.id === "dependency-scan") {
+      emit({ type: "step", actor: "AGENT A / SECURITY VERIFIER", title: "Dependency scan completed", detail: `${result.scan?.findings?.length ?? 0} vulnerability finding(s) returned from the current security feed`, data: { scan: result.scan, externalLookup: true } });
+    } else {
+      verificationStarted = true;
+      if (!result.resolution) throw new Error("Provider returned no incident resolution");
+      const verification = await verifyResolution(selectedFixture, result.resolution);
+      emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk`, data: { command: verification.command, changed: verification.changed.map((file) => file.path), patchApplied: true } });
+    }
+    emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: selectedFixture.id === "dependency-scan" ? "Security intelligence returned" : "Structured patch returned", detail: "The paid capability returned its live structured response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const insufficientFunds = Boolean(options.emptyWallet && payerAddress);
