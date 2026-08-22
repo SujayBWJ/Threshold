@@ -63,7 +63,7 @@ export const incidentFixtures: Record<IncidentBugId, {
     error: { name: "AssertionError", message: "Expected 5 but received 20", stack: "at math.test.ts:4:22" },
     files: [
       { path: "src/math.ts", content: "export function divide(a: number, b: number): number {\n  return a * b;\n}" },
-      { path: "src/math.test.ts", content: "import { divide } from './math';\n\ntest('divides two numbers', () => {\n  expect(divide(10, 2)).toBe(5);\n});" },
+      { path: "src/math.test.ts", content: "import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { divide } from './math';\n\ntest('divides two numbers', () => {\n  assert.equal(divide(10, 2), 5);\n});" },
     ],
     constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1 },
   },
@@ -75,7 +75,7 @@ export const incidentFixtures: Record<IncidentBugId, {
     error: { name: "RegionCacheIsolationError", message: "Expected eu-west profile, received us-east profile after cache hit", stack: "at userLookup.test.ts:10:29" },
     files: [
       { path: "src/cache/userLookup.ts", content: "type User = { id: string; region: string; name: string };\nconst cache = new Map<string, User>();\n\nexport async function findUser(userId: string, region: string, load: () => Promise<User>) {\n  const key = userId;\n  const cached = cache.get(key);\n  if (cached) return cached;\n  const user = await load();\n  cache.set(key, user);\n  return user;\n}" },
-      { path: "src/cache/userLookup.test.ts", content: "import { findUser } from './userLookup';\n\ntest('does not share users between regions', async () => {\n  const us = await findUser('user-42', 'us-east', async () => ({ id: 'user-42', region: 'us-east', name: 'US user' }));\n  const eu = await findUser('user-42', 'eu-west', async () => ({ id: 'user-42', region: 'eu-west', name: 'EU user' }));\n  expect(us.region).toBe('us-east');\n  expect(eu.region).toBe('eu-west');\n});" },
+      { path: "src/cache/userLookup.test.ts", content: "import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { findUser } from './userLookup';\n\ntest('does not share users between regions', async () => {\n  const us = await findUser('user-42', 'us-east', async () => ({ id: 'user-42', region: 'us-east', name: 'US user' }));\n  const eu = await findUser('user-42', 'eu-west', async () => ({ id: 'user-42', region: 'eu-west', name: 'EU user' }));\n  assert.equal(us.region, 'us-east');\n  assert.equal(eu.region, 'eu-west');\n});" },
     ],
     constraints: { must_return_patch: true, run_tests: true, max_files_changed: 1, security_sensitive: true },
   },

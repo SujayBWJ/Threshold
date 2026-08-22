@@ -24,7 +24,7 @@ test("divide fixture reports the arithmetic bug accurately", () => {
   const assertion = fixture.files.find((file) => file.path === "src/math.test.ts")?.content;
 
   assert.ok(source?.includes("return a * b"));
-  assert.ok(assertion?.includes("divide(10, 2)).toBe(5)"));
+  assert.ok(assertion?.includes("assert.equal(divide(10, 2), 5)"));
   assert.equal(fixture.error.name, "AssertionError");
   assert.match(fixture.error.message, /Expected 5 but received 20/);
 });
