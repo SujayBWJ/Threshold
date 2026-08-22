@@ -374,7 +374,7 @@ without the free-tier sleep delay. The repository includes [`railway.json`](rail
 1. Open Railway and choose **New Project** -> **Deploy from GitHub repo**.
 2. Select `SujayBWJ/Threshold` and deploy the `main` branch.
 3. Railway reads `railway.json`, installs the workspace with pnpm, and starts
-  `pnpm --dir server start`.
+  `pnpm --dir server start`. Railway detects pnpm from the committed lockfile.
 4. Add the environment values from your local `.env` in the Railway Variables tab. Never
   paste `.env` into GitHub or commit wallet mnemonics.
 5. Set `X402_NETWORK=testnet` for judging, then open the generated Railway domain.
