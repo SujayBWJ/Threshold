@@ -521,7 +521,7 @@ body {
 
 .toggle-control { display: inline-flex; align-items: center; gap: 0.5rem; color: #bdc8c5; cursor: pointer; font: 0.68rem "JetBrains Mono", monospace; white-space: nowrap; }
 .toggle-control input { position: absolute; opacity: 0; pointer-events: none; }
-.toggle-track { position: relative; width: 2rem; height: 1.1rem; border: 1px solid #53615e; border-radius: 999px; background: #17201f; transition: background 160ms ease, border-color 160ms ease; }
+.toggle-track { position: relative; width: 2rem; height: 1.1rem; border: 1px solid #53615e; border-radius: 999px; background: #17201f; pointer-events: none; transition: background 160ms ease, border-color 160ms ease; }
 .toggle-track::after { position: absolute; top: 0.17rem; left: 0.18rem; width: 0.62rem; height: 0.62rem; border-radius: 50%; background: #e8efeb; content: ""; transition: transform 160ms ease; }
 .toggle-control input:checked + .toggle-track { border-color: var(--accent); background: var(--accent); }
 .toggle-control input:checked + .toggle-track::after { transform: translateX(0.88rem); background: #111716; }

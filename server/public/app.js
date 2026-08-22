@@ -410,7 +410,7 @@ function saveIncidentActivity(events) {
   const settlement = events.find((event) => event.data?.settlement?.success);
   const cost = settlement ? 0.001 : 0;
   const item = {
-    incident: first?.data?.fixture?.id === "regional-cache" ? "Regional cache collision in src/cache/userLookup.ts" : first?.data?.fixture?.id === "dependency-scan" ? "Dependency vulnerability scan for demo-xml-parser" : "Divide failure in src/math.ts",
+    incident: first?.data?.fixture?.id === "regional-cache" ? "Regional cache collision in src/cache/userLookup.ts" : first?.data?.fixture?.id === "dependency-scan" ? "Dependency vulnerability scan for demo-xml-parser" : first?.data?.fixture?.id === "divide" ? "Divide failure in src/math.ts" : "Incident flow did not emit an incident payload",
     outcome: complete ? "resolved" : "failed",
     reason: complete ? "Structured patch returned" : error?.detail || "Payment flow failed",
     cost,
