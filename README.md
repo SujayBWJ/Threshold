@@ -280,6 +280,7 @@ The repository includes [`render.yaml`](render.yaml) for Render. To deploy:
 
 1. Create a new Render Blueprint and select this GitHub repository.
 2. Render reads `render.yaml`, installs the pnpm workspace, and starts `pnpm --dir server start`.
+  The blueprint invokes pnpm through Corepack without modifying Render's system directory.
 3. Enter the `sync: false` values in Render's environment settings. Copy them from your local
   `.env` without committing them.
 4. Keep `X402_NETWORK=testnet` for judging and wait for `/api/catalog` to pass its health check.

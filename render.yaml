@@ -3,7 +3,7 @@ services:
     name: threshold
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    buildCommand: corepack pnpm install --frozen-lockfile
     startCommand: pnpm --dir server start
     healthCheckPath: /api/catalog
     envVars:
