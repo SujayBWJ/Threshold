@@ -473,6 +473,7 @@ function addFlowEvent(event) {
       <div class="sim-event-meta"><span>${escapeHtml(event.actor)}</span><time>${escapeHtml(new Date(event.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))}</time></div>
       <strong>${escapeHtml(event.title)}</strong>
       <code>${escapeHtml(event.detail)}</code>
+      ${event.data?.patchApplied && Array.isArray(event.data.changed) ? `<div class="verification-evidence">On-disk evidence: ${event.data.changed.map((file) => `${escapeHtml(file.path)} · sha256:${escapeHtml(file.sha256 || "unavailable")}`).join(" · ")}</div>` : ""}
       ${payloadEvidence}
       ${fundingGuide}
     </div>

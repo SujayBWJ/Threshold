@@ -50,6 +50,7 @@ test("provider patch is applied on disk before the fixture test runs", async () 
 
   assert.equal(result.command, "pnpm exec tsx --test src/math.test.ts");
   assert.deepEqual(result.changed.map((file) => file.path), ["src/math.ts"]);
+  assert.match(result.changed[0]?.content || "", /return a \/ b/);
 });
 
 test("dependency scan finds current feed data that passing tests cannot detect", () => {

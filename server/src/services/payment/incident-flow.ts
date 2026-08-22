@@ -1,5 +1,5 @@
 import { x402Client, wrapFetchWithPayment, x402HTTPClient } from "@x402/fetch";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -307,7 +307,11 @@ export async function runIncidentPaymentFlow(options: {
       verificationStarted = true;
       if (!result.resolution) throw new Error("Provider returned no incident resolution");
       const verification = await verifyResolution(selectedFixture, result.resolution);
-      emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk`, data: { command: verification.command, changed: verification.changed.map((file) => file.path), patchApplied: true } });
+      const fileEvidence = verification.changed.map((file) => ({
+        path: file.path,
+        sha256: createHash("sha256").update(file.content, "utf8").digest("hex"),
+      }));
+      emit({ type: "step", actor: "AGENT A / VERIFIER", title: "Verification passed", detail: `${verification.command} passed after applying the provider patch on disk; verified ${fileEvidence.map((file) => `${file.path} (sha256:${file.sha256.slice(0, 12)}...)`).join(", ")}`, data: { command: verification.command, changed: fileEvidence, patchApplied: true } });
     }
     emit({ type: "complete", actor: "AGENT B / DEBUG LABS", title: selectedFixture.id === "dependency-scan" ? "Security intelligence returned" : "Structured patch returned", detail: "The paid capability returned its live structured response", data: { response: result, settlement, transaction, network: network.label, provider: selected.provider.walletAddress } });
   } catch (error) {
