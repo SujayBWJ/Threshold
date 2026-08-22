@@ -40,6 +40,49 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  server:
+    dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 10.0.0-alpha.46
+        version: 10.0.0-alpha.46
+      '@google/generative-ai':
+        specifier: ^0.24.1
+        version: 0.24.1
+      '@hono/node-server':
+        specifier: ^2.1.0
+        version: 2.1.0(hono@4.13.1)
+      '@x402-avm/extensions':
+        specifier: ^2.6.1
+        version: 2.6.1(ethers@6.17.0)(typescript@7.0.2)
+      '@x402/avm':
+        specifier: ^2.22.0
+        version: 2.22.0
+      '@x402/core':
+        specifier: ^2.22.0
+        version: 2.22.0
+      '@x402/fetch':
+        specifier: ^2.22.0
+        version: 2.23.0
+      '@x402/hono':
+        specifier: ^2.22.0
+        version: 2.22.0(ethers@6.17.0)(hono@4.13.1)(typescript@7.0.2)
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
+      hono:
+        specifier: ^4.13.1
+        version: 4.13.1
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':
@@ -207,6 +250,10 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@google/generative-ai@0.24.1':
+    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
+    engines: {node: '>=18.0.0'}
 
   '@hono/node-server@2.1.0':
     resolution: {integrity: sha512-XovyyCCnBzW+zKu+z/zq8hwNs4KOR5rEMAOxo2f40Q5xoOI37IMm6MIg2COOUtUApo0i6850MTBKH2u4QLGIqg==}
@@ -428,8 +475,14 @@ packages:
   '@x402/core@2.22.0':
     resolution: {integrity: sha512-hYySs/PvukqRipC2mKqrsn/jx2U/p5EGnN3clQ2CIcApwtoFuG77CqpC3Wy7Fdp/juW8t8quiPVnqGuIkfix1Q==}
 
+  '@x402/core@2.23.0':
+    resolution: {integrity: sha512-EFeV0nXbTPPe5FXaD6y9vMgqc+k/ujLXCrUPrQXkmHjHyjC3Ir5tTL1e2FPSkx2+GUGzfpt1wVZb36639ygkWw==}
+
   '@x402/extensions@2.22.0':
     resolution: {integrity: sha512-E5Ma1Fs1GwO/ET7KtGUI7dPuVFoINR+mwTWVoGdNi3DsJBJKDWSA7Ta7bDgSANzV3XCAMK9gvz/VSItZliApMA==}
+
+  '@x402/fetch@2.23.0':
+    resolution: {integrity: sha512-iyUfmnX6eAQa+GxyhC2M/vDP49EuoB/KHCXeOAFJgfL9lhtsyomLfYAMZlF+0xYHgpk/G96QZSp8iyhVlems/A==}
 
   '@x402/hono@2.22.0':
     resolution: {integrity: sha512-ztfv8Ke2L25uR/ww32RWgE3okfkTuRFeafVOHiXC0r3rMc+rtEfOexc1aqagjivy6CaiUli1WNoCCVRPkU87xg==}
@@ -715,6 +768,8 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@google/generative-ai@0.24.1': {}
+
   '@hono/node-server@2.1.0(hono@4.13.1)':
     dependencies:
       hono: 4.13.1
@@ -888,6 +943,10 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
+  '@x402/core@2.23.0':
+    dependencies:
+      zod: 3.25.76
+
   '@x402/extensions@2.22.0(ethers@6.17.0)(typescript@7.0.2)':
     dependencies:
       '@noble/curves': 1.9.7
@@ -904,6 +963,10 @@ snapshots:
       - ethers
       - typescript
       - utf-8-validate
+
+  '@x402/fetch@2.23.0':
+    dependencies:
+      '@x402/core': 2.23.0
 
   '@x402/hono@2.22.0(ethers@6.17.0)(hono@4.13.1)(typescript@7.0.2)':
     dependencies:
