@@ -168,6 +168,7 @@ function patchText(diff: unknown, path: string): string {
 
 export async function verifyResolution(selectedFixture: typeof fixture, resolution: { patch?: Array<{ path?: string; diff?: string }> }) {
   const workspace = await mkdtemp(join(tmpdir(), "threshold-incident-"));
+  const keepWorkspace = process.env.THRESHOLD_KEEP_VERIFICATION_WORKSPACE === "true";
   try {
     for (const file of selectedFixture.files) {
       const target = resolve(workspace, file.path);
@@ -205,9 +206,20 @@ export async function verifyResolution(selectedFixture: typeof fixture, resoluti
       path: entry.path,
       content: await readFile(resolve(workspace, entry.path as string), "utf8"),
     })));
+    console.log(`[Threshold verification] workspace: ${workspace}`);
+    for (const file of changed) {
+      const filePath = resolve(workspace, file.path as string);
+      const hash = createHash("sha256").update(file.content, "utf8").digest("hex");
+      console.log(`[Threshold verification] patched file: ${filePath}`);
+      console.log(`[Threshold verification] sha256: ${hash}`);
+    }
     return { command: `pnpm exec tsx --test ${testFile.path}`, changed };
   } finally {
-    await rm(workspace, { recursive: true, force: true });
+    if (keepWorkspace) {
+      console.log(`[Threshold verification] workspace preserved: ${workspace}`);
+    } else {
+      await rm(workspace, { recursive: true, force: true });
+    }
   }
 }
 

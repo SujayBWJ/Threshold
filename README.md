@@ -335,6 +335,16 @@ the flow emits `Verification passed` only when that test succeeds. Security scan
 return a structured finding from a clearly labeled OSV-compatible mock feed. This sandbox
 keeps the demo honest without modifying the repository running the server.
 
+For manual hash inspection, start the server with
+`THRESHOLD_KEEP_VERIFICATION_WORKSPACE=true`. The server terminal prints the absolute
+patched-file path and full SHA-256 hash after verification. Compare the file yourself:
+
+```powershell
+Get-FileHash "C:\path\printed-by-threshold\src\math.ts" -Algorithm SHA256
+```
+
+The preserved directory is temporary verification evidence, not the user's project.
+
 ## Troubleshooting
 
 ### Gemini quota error
